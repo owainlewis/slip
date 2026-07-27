@@ -1,8 +1,9 @@
 import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
+import sharp from "sharp";
 import { afterEach, describe, expect, it } from "vitest";
-import { calculateImageCrop } from "./image.js";
+import { calculateImageCrop, renderSlideImage } from "./image.js";
 import { initialiseWorkspace, readCarousel } from "./workspace.js";
 
 const directories: string[] = [];
@@ -15,13 +16,13 @@ async function workspace(): Promise<{ root: string; carousel: string }> {
   return { root, carousel };
 }
 
-function document(src: string, zoom = 1): string {
+function document(src: string, zoom = 1, layout = "photo_band"): string {
   return `schemaVersion: 1
 id: welcome
 title: Image validation
 slides:
   - id: photo
-    layout: photo_band
+    layout: ${layout}
     content:
       headline: A photographic slide
     image:
@@ -57,6 +58,31 @@ describe("image framing", () => {
     expect(lowerRight.top).toBe(1000);
     expect(lowerRight.width).toBeCloseTo(1290.323);
     expect(lowerRight.height).toBe(1000);
+  });
+
+  it("keeps schema-v1 540×1350 photo_split sources valid for the wider composition", async () => {
+    const { root, carousel } = await workspace();
+    const asset = join(root, "assets", "legacy-split.svg");
+    await writeFile(
+      asset,
+      '<svg xmlns="http://www.w3.org/2000/svg" width="540" height="1350"><rect width="540" height="1350" fill="#345"/></svg>'
+    );
+    await writeFile(carousel, document("../../assets/legacy-split.svg", 1, "photo_split"));
+
+    const parsed = await readCarousel(carousel, root);
+    const slide = parsed.slides[0]!;
+    expect(slide.layout).toBe("photo_split");
+    if (slide.layout !== "photo_split") throw new Error("expected photo_split fixture");
+
+    const dataUri = await renderSlideImage(slide, carousel, root);
+    const rendered = await sharp(Buffer.from(dataUri.split(",")[1]!, "base64")).metadata();
+    expect(rendered).toMatchObject({ format: "png", width: 702, height: 1350 });
+
+    await writeFile(carousel, document("../../assets/legacy-split.svg", 1.01, "photo_split"));
+    await expect(readCarousel(carousel, root)).rejects.toMatchObject({
+      yamlPath: "$.slides[0].image.src",
+      message: expect.stringContaining("effectively undersized")
+    });
   });
 
   it("accepts a valid local image and reports missing, corrupt, outside, and undersized images", async () => {

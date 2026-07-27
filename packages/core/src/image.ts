@@ -23,6 +23,11 @@ export const imageRegions = {
   photo_band: { width: 1080, height: 820 }
 } as const satisfies Record<PhotoSlide["layout"], ImageRegion>;
 
+const imageValidationRegions = {
+  photo_split: { width: 540, height: 1350 },
+  photo_band: imageRegions.photo_band
+} as const satisfies Record<PhotoSlide["layout"], ImageRegion>;
+
 export function calculateImageCrop(
   source: ImageRegion,
   destination: ImageRegion,
@@ -51,6 +56,17 @@ function assertSufficientPixels(
     carouselFile,
     yamlPath
   );
+}
+
+function assertSlideImageSufficient(
+  source: ImageRegion,
+  slide: PhotoSlide,
+  carouselFile: string,
+  yamlPath?: string
+): void {
+  const region = imageValidationRegions[slide.layout];
+  const crop = calculateImageCrop(source, region, slide.image.position, slide.image.zoom);
+  assertSufficientPixels(source, region, crop, carouselFile, yamlPath);
 }
 
 async function resolveImagePath(
@@ -96,9 +112,7 @@ export async function validateCarouselImages(
     const yamlPath = `$.slides[${index}].image.src`;
     const path = await resolveImagePath(workspace, carouselFile, slide, index);
     const source = await imageMetadata(path, carouselFile, yamlPath);
-    const region = imageRegions[slide.layout];
-    const crop = calculateImageCrop(source, region, slide.image.position, slide.image.zoom);
-    assertSufficientPixels(source, region, crop, carouselFile, yamlPath);
+    assertSlideImageSufficient(source, slide, carouselFile, yamlPath);
   }
 }
 
@@ -109,9 +123,9 @@ export async function renderSlideImage(
 ): Promise<string> {
   const path = await resolveImagePath(workspace, carouselFile, slide);
   const source = await imageMetadata(path, carouselFile);
+  assertSlideImageSufficient(source, slide, carouselFile);
   const region = imageRegions[slide.layout];
   const crop = calculateImageCrop(source, region, slide.image.position, slide.image.zoom);
-  assertSufficientPixels(source, region, crop, carouselFile);
   const width = Math.min(source.width, Math.max(1, Math.round(crop.width)));
   const height = Math.min(source.height, Math.max(1, Math.round(crop.height)));
   const buffer = await sharp(source.buffer)
