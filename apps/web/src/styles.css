@@ -97,6 +97,23 @@ h1 { font-size: clamp(54px, 9vw, 96px); line-height: .9; }
 
 .back { text-decoration: none; font-size: 14px; padding-top: 4px; }
 
+.download {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 11px 15px;
+  color: #f5f0e7;
+  background: #171714;
+  border: 1px solid #171714;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.download:hover {
+  color: #171714;
+  background: transparent;
+}
+
 .error {
   background: #fae3dc;
   border-left: 4px solid #a7402d;

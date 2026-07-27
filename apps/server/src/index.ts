@@ -7,6 +7,7 @@ import { getRequestListener } from "@hono/node-server";
 import {
   assertWorkspace,
   carouselFiles,
+  createInstagramZip,
   readCarousel,
   renderSlideSvg,
   SlipError
@@ -130,6 +131,25 @@ export async function startSlipServer(options: StartServerOptions): Promise<Slip
     const entry = cache.get(slug);
     if (!entry?.carousel) return context.json({ error: "carousel not found" }, 404);
     return context.json({ carousel: entry.carousel, error: entry.error });
+  });
+  app.get("/api/carousels/:slug/instagram.zip", async (context) => {
+    const slug = context.req.param("slug");
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+      return context.json({ error: "invalid carousel slug" }, 400);
+    }
+    if (!cache.has(slug)) return context.json({ error: "carousel not found" }, 404);
+    try {
+      const archive = await createInstagramZip(workspace, slug);
+      return new Response(Uint8Array.from(archive.buffer).buffer, {
+        headers: {
+          "content-type": "application/zip",
+          "content-disposition": `attachment; filename="${archive.filename}"`,
+          "content-length": String(archive.buffer.byteLength)
+        }
+      });
+    } catch (error) {
+      return context.json({ error: errorPayload(error, workspace) }, 422);
+    }
   });
   app.notFound((context) => context.json({ error: "not found" }, 404));
   const honoListener = getRequestListener(app.fetch);

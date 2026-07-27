@@ -74,6 +74,13 @@ function App() {
             <p className="kicker">Read-only preview</p>
             <h1>{preview.title}</h1>
             <p>{preview.slideCount} {preview.slideCount === 1 ? "slide" : "slides"} · updated {formatTime(preview.updatedAt)}</p>
+            <a
+              className="download"
+              href={`/api/carousels/${encodeURIComponent(preview.slug)}/instagram.zip`}
+              download={`${preview.slug}-instagram.zip`}
+            >
+              Download Instagram PNGs
+            </a>
           </div>
         </header>
         {errors.map((error) => (

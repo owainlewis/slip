@@ -1,4 +1,4 @@
-import { access, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { access, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { execa } from "execa";
@@ -72,4 +72,37 @@ describe("CLI contracts", () => {
     expect(invalidNew.stderr).toContain("carousels/too-long/carousel.yaml:$.slides[0].content.headline");
     await expect(access(join(workspace, "carousels", "too-long", "carousel.yaml"))).rejects.toThrow();
   }, 15_000);
+
+  it("exports ordered Instagram PNGs to a directory or ZIP", async () => {
+    const parent = await mkdtemp(join(tmpdir(), "slip-cli-export-"));
+    directories.push(parent);
+    const workspace = join(parent, "workspace");
+    await run(["init", workspace], process.cwd());
+
+    const destination = join(parent, "instagram");
+    const exported = await run(
+      ["export", "welcome", "--platform", "instagram", "--output", destination],
+      workspace
+    );
+    expect(exported.exitCode).toBe(0);
+    expect(exported.stdout).toContain(`Exported 1 Instagram PNG to ${destination}`);
+    expect(await readdir(destination)).toEqual(["01-cover.png"]);
+
+    const zipDestination = join(parent, "instagram.zip");
+    const zipped = await run(
+      ["export", "welcome", "--platform", "instagram", "--output", zipDestination],
+      workspace
+    );
+    expect(zipped.exitCode).toBe(0);
+    expect((await readFile(zipDestination)).subarray(0, 4).toString("hex")).toBe("504b0304");
+
+    const unsupported = await run(
+      ["export", "welcome", "--platform", "linkedin"],
+      workspace
+    );
+    expect(unsupported.exitCode).toBe(1);
+    expect(unsupported.stderr).toContain(
+      'unsupported platform "linkedin"; allowed: instagram'
+    );
+  }, 20_000);
 });

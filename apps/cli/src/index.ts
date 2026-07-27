@@ -6,6 +6,7 @@ import open from "open";
 import {
   createCarousel,
   describeLayout,
+  exportInstagram,
   initialiseWorkspace,
   layoutDefinitions,
   listLayouts,
@@ -65,6 +66,27 @@ export function createProgram(): Command {
     .action(async (carousel?: string) => {
       const files = await validateWorkspace(process.cwd(), carousel);
       files.forEach((file) => process.stdout.write(`valid ${file}\n`));
+    });
+
+  program
+    .command("export")
+    .argument("<carousel>")
+    .requiredOption("--platform <platform>", "export platform")
+    .option("--output <path>", "output directory or .zip file")
+    .description("Export a validated carousel")
+    .action(async (
+      carousel: string,
+      options: { platform: string; output?: string }
+    ) => {
+      if (options.platform !== "instagram") {
+        throw new SlipError(
+          `unsupported platform "${options.platform}"; allowed: instagram`
+        );
+      }
+      const result = await exportInstagram(process.cwd(), carousel, options.output);
+      process.stdout.write(
+        `Exported ${result.files.length} Instagram PNG${result.files.length === 1 ? "" : "s"} to ${result.destination}\n`
+      );
     });
 
   program
