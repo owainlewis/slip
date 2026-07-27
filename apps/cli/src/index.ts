@@ -19,7 +19,7 @@ import { startSlipServer } from "@slip/server";
 export function createProgram(): Command {
   const program = new Command()
     .name("slip")
-    .description("Declarative local carousel studio")
+    .description("Declarative editorial carousel studio")
     .version("0.1.0")
     .showHelpAfterError();
 

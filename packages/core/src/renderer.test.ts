@@ -34,12 +34,13 @@ async function expectOpaqueGeometry(
   slide: Slide,
   imagePoint: [number, number],
   textPoint: [number, number],
-  expectedImage: [number, number, number]
+  expectedImage: [number, number, number],
+  expectedText: [number, number, number] = [238, 232, 220]
 ): Promise<{ pixels: Buffer; channels: number }> {
   const svg = await renderSlideSvg(slide, { carouselFile, workspace });
   const decoded = await raster(svg);
   expect(pixel(decoded, ...imagePoint)).toEqual(expectedImage);
-  expect(pixel(decoded, ...textPoint)).toEqual([245, 240, 231]);
+  expect(pixel(decoded, ...textPoint)).toEqual(expectedText);
   return decoded;
 }
 
@@ -69,18 +70,38 @@ afterAll(async () => {
 });
 
 describe("layout pixel regression", () => {
+  it("preserves authored headline lines, emphasis, folios, and deterministic texture", async () => {
+    const slide: Slide = {
+      id: "authored",
+      layout: "type_only",
+      content: {
+        headline: "Look long\nenough to see.",
+        emphasis: "see"
+      },
+      options: { align: "left", tone: "ink", emphasisStyle: "mark" }
+    };
+    const context = { carouselFile, workspace, slideIndex: 1, slideCount: 3 };
+    const first = await renderSlideSvg(slide, context);
+    const second = await renderSlideSvg(slide, context);
+    expect(first).toBe(second);
+    expect(first).toContain('data-headline-lines="2"');
+    expect(first).toContain('data-emphasis-style="mark"');
+    expect(first).toContain('data-folio-value="02 / 03"');
+    expect(pixelHash(await raster(first))).toMatchInlineSnapshot(`"62f939c884bd7712ef294d0d8d1b4998bcf021ef5811d8c12da6e4fddfdde25c"`);
+  });
+
   it("scopes generated SVG resource IDs to each slide", async () => {
     const first = await renderSlideSvg({
       id: "first",
       layout: "type_only",
       content: { headline: "First" },
-      options: { align: "left" }
+      options: { align: "left", tone: "paper", emphasisStyle: "italic" }
     });
     const second = await renderSlideSvg({
       id: "second",
       layout: "type_only",
       content: { headline: "Second" },
-      options: { align: "left" }
+      options: { align: "left", tone: "paper", emphasisStyle: "italic" }
     });
     const firstIds = [...first.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]!);
     const secondIds = [...second.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]!);
@@ -95,14 +116,16 @@ describe("layout pixel regression", () => {
       id: "caption-wrap",
       layout: "photo_band",
       content: { headline: "A short headline", caption: "W".repeat(120) },
-      image: { src: "../../assets/landscape.svg", position: [0.5, 0.5], zoom: 1 }
+      image: { src: "../../assets/landscape.svg", position: [0.5, 0.5], zoom: 1 },
+      options: { tone: "paper", emphasisStyle: "italic" }
     }, { carouselFile, workspace, slideIndex: 0 })).resolves.toContain("<svg");
 
     await expect(renderSlideSvg({
       id: "headline-overflow",
       layout: "photo_band",
       content: { headline: "W".repeat(80), caption: "W".repeat(120) },
-      image: { src: "../../assets/landscape.svg", position: [0.5, 0.5], zoom: 1 }
+      image: { src: "../../assets/landscape.svg", position: [0.5, 0.5], zoom: 1 },
+      options: { tone: "paper", emphasisStyle: "italic" }
     }, { carouselFile, workspace, slideIndex: 1 })).rejects.toMatchObject({
       file: carouselFile,
       yamlPath: "$.slides[1].content.headline",
@@ -115,7 +138,7 @@ describe("layout pixel regression", () => {
       id: "minimum",
       layout: "type_only",
       content: { headline: "x" },
-      options: { align: "left" }
+      options: { align: "left", tone: "paper", emphasisStyle: "italic" }
     }));
     const maximum = await raster(await renderSlideSvg({
       id: "maximum",
@@ -125,22 +148,22 @@ describe("layout pixel regression", () => {
         headline: "h".repeat(100),
         body: "b".repeat(260)
       },
-      options: { align: "center" }
+      options: { align: "center", tone: "ink", emphasisStyle: "mark" }
     }));
-    expect(pixel(minimum, 0, 0)).toEqual([245, 240, 231]);
-    expect(pixel(maximum, 1079, 1349)).toEqual([245, 240, 231]);
+    expect(pixel(minimum, 0, 0)).toEqual([238, 232, 220]);
+    expect(pixel(maximum, 1079, 1349)).toEqual([32, 35, 31]);
     expect(minimum.pixels.equals(maximum.pixels)).toBe(false);
-    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"ebc9b9320cb1d8196d6db5fe2e53aaf2a8166e19e39e6b900c75f87f9ac0d132"`);
-    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"015edb11a43703b12e0faf6d3233af6f5bafcaeff4eeaf0a5bac3543b49e20a6"`);
+    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"4ada3077f0be1bc6d50c89e3374d562353d18a5bcc369ff74b62dfdd60706c6a"`);
+    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"4fe3d078c398651083a2edbdc374da372dc5a332daccd4f9e119bfc38f010d1e"`);
   });
 
-  it("keeps photo_split copy on an opaque 50/50 region for both sides and copy limits", async () => {
+  it("keeps photo_split copy on an asymmetric opaque region for both sides and copy limits", async () => {
     const minimum = await expectOpaqueGeometry({
       id: "minimum",
       layout: "photo_split",
       content: { headline: "x" },
       image: { src: "../../assets/portrait.svg", position: [0, 0], zoom: 3 },
-      options: { side: "left" }
+      options: { side: "left", tone: "paper", emphasisStyle: "italic" }
     }, [100, 100], [900, 100], [179, 59, 46]);
 
     const maximum = await expectOpaqueGeometry({
@@ -151,19 +174,20 @@ describe("layout pixel regression", () => {
         body: "Judgment and context remain harder to reproduce. The fixed composition gives long supporting copy enough room without shrinking the type, truncating a sentence, or placing any text directly over the photograph.".padEnd(220, "x")
       },
       image: { src: "../../assets/portrait.svg", position: [1, 1], zoom: 3 },
-      options: { side: "right" }
-    }, [900, 100], [100, 100], [36, 75, 112]);
-    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"86ad6a5ad1db9b2ae054bf14d11c6d456a567803dc5f4d36da8629f75f936f27"`);
-    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"c8bcff5e982d84db5495bea87419cccbd963796bc1440bab85c4a6a4422ce930"`);
+      options: { side: "right", tone: "ink", emphasisStyle: "mark" }
+    }, [900, 100], [100, 100], [36, 75, 112], [32, 35, 31]);
+    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"65ae3f1c1cc8063603fec3ca3b5e50e9083036b437658172e5a01ca296d0b837"`);
+    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"da390b119aeabf5d35f7cc49f51be603ec06d1d4d7fd465781ab51d909c3b82e"`);
   });
 
-  it("keeps photo_band copy on an opaque lower 38% region at copy and focal limits", async () => {
+  it("composes photo_band with an inset opaque surface at copy and focal limits", async () => {
     const minimum = await expectOpaqueGeometry({
       id: "minimum",
       layout: "photo_band",
       content: { headline: "x" },
-      image: { src: "../../assets/landscape.svg", position: [0, 0], zoom: 1 }
-    }, [100, 100], [100, 900], [194, 139, 44]);
+      image: { src: "../../assets/landscape.svg", position: [0, 0], zoom: 1 },
+      options: { tone: "paper", emphasisStyle: "italic" }
+    }, [100, 100], [950, 1150], [194, 139, 44], [238, 232, 220]);
 
     const maximum = await expectOpaqueGeometry({
       id: "maximum",
@@ -172,9 +196,10 @@ describe("layout pixel regression", () => {
         headline: "i".repeat(80),
         caption: "Normalized focal coordinates keep the subject deliberate while deterministic clamping prevents the requested crop leaving the image.".padEnd(120, "x").slice(0, 120)
       },
-      image: { src: "../../assets/landscape.svg", position: [1, 1], zoom: 3 }
-    }, [900, 100], [100, 900], [49, 95, 69]);
-    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"2f7d19e510341eb361adef940536d20a8ebee04c9fe6439a7197343ebd6d9531"`);
-    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"473beb758f485e171641fd6498d86da9f1fe1a53fa7c0cca84784c753efcbcae"`);
+      image: { src: "../../assets/landscape.svg", position: [1, 1], zoom: 3 },
+      options: { tone: "ink", emphasisStyle: "mark" }
+    }, [900, 100], [950, 1150], [49, 95, 69], [32, 35, 31]);
+    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"65ac0627ff4bf0e5a776e133d344f03f5ee157374c66732ede9bccdf7e5c7f09"`);
+    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"fb648d1e36201f0437af356639b08bea4f95430df2785d903d11b6f8b44aa732"`);
   });
 });

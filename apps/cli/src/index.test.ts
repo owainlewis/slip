@@ -31,6 +31,8 @@ describe("CLI contracts", () => {
     expect(detail.stdout).toContain("image.position    [x, y], each 0–1 inclusive");
     expect(detail.stdout).toContain("image.zoom        1–3 (default: 1)");
     expect(detail.stdout).toContain("options.side      left | right (default: left)");
+    expect(detail.stdout).toContain("options.tone      paper | ink (default: paper)");
+    expect(detail.stdout).toContain("options.emphasisStyle italic | mark (default: italic)");
     expect(detail.stdout).toContain("layout: photo_split");
 
     const unknown = await run(["layouts", "hero"], process.cwd());

@@ -1,24 +1,73 @@
 schemaVersion: 1
 id: essential
-title: The essential layouts
+title: What survives when code gets cheap
 slides:
-  - id: type
+  - id: cover
     layout: type_only
     content:
-      headline: One clear thought
+      eyebrow: FIELD NOTE 01
+      headline: |-
+        Code is cheap.
+        Context is not.
+      emphasis: Context
+      body: Execution keeps getting easier. The difficult part has moved somewhere less visible.
     options:
       align: left
-  - id: split
-    layout: photo_split
-    content:
-      headline: Image and argument
-    image:
-      src: ../../assets/portrait.svg
-    options:
-      side: left
-  - id: band
+      tone: ink
+      emphasisStyle: italic
+  - id: upstream
     layout: photo_band
     content:
-      headline: A strong opening frame
+      headline: |-
+        The bottleneck
+        moved upstream.
+      emphasis: upstream
+      caption: When output is abundant, deciding what deserves to exist becomes the work.
     image:
-      src: ../../assets/landscape.svg
+      src: ../../assets/sierra-nevada.jpg
+      position: [0.48, 0.44]
+      zoom: 1.15
+    options:
+      tone: paper
+      emphasisStyle: mark
+  - id: survives
+    layout: type_only
+    content:
+      eyebrow: THE SCARCE LAYER
+      headline: |-
+        What
+        survives?
+      emphasis: survives
+      body: Taste. Distribution. Trust. The judgment to know which problem is worth solving.
+    options:
+      align: left
+      tone: paper
+      emphasisStyle: italic
+  - id: wider-field
+    layout: photo_split
+    image:
+      src: ../../assets/sea-cliff.jpg
+      position: [0.52, 0.48]
+      zoom: 1.1
+    content:
+      headline: |-
+        Better tools
+        widen the field.
+      emphasis: widen
+      body: They do not remove the need for a point of view. They make its absence easier to see.
+    options:
+      side: left
+      tone: ink
+      emphasisStyle: italic
+  - id: close
+    layout: type_only
+    content:
+      headline: |-
+        Build the part
+        no model can own.
+      emphasis: own
+      body: Let the machine accelerate the craft. Keep the reason for making it human.
+    options:
+      align: center
+      tone: paper
+      emphasisStyle: mark

@@ -61,7 +61,12 @@ async function renderCarousel(file: string, workspace: string): Promise<Carousel
     carousel.slides.map(async (slide, slideIndex) => ({
       id: slide.id,
       headline: slide.content.headline,
-      svg: await renderSlideSvg(slide, { carouselFile: file, workspace, slideIndex })
+      svg: await renderSlideSvg(slide, {
+        carouselFile: file,
+        workspace,
+        slideIndex,
+        slideCount: carousel.slides.length
+      })
     }))
   );
   return {
