@@ -1,18 +1,26 @@
 import { createHash } from "node:crypto";
+import { execFile } from "node:child_process";
 import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { promisify } from "node:util";
 import JSZip from "jszip";
+import { PDFDocument } from "pdf-lib";
 import sharp from "sharp";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   createInstagramZip,
+  createLinkedInPdf,
   exportInstagram,
+  exportLinkedIn,
+  LINKEDIN_PAGE_HEIGHT_POINTS,
+  LINKEDIN_PAGE_WIDTH_POINTS,
   renderInstagramSlides
 } from "./export.js";
 import { initialiseWorkspace } from "./workspace.js";
 
 const directories: string[] = [];
+const executeFile = promisify(execFile);
 
 async function workspaceWithTwoSlides(): Promise<{
   parent: string;
@@ -170,5 +178,79 @@ describe("Instagram export", () => {
 
     expect(await readFile(carouselFile, "utf8")).toBe(sourceBeforeExport);
     await expect(readFile(sourceZip)).rejects.toMatchObject({ code: "ENOENT" });
+  });
+});
+
+describe("LinkedIn export", () => {
+  it("creates one ordered 576×720 point flattened page from every rendered PNG", async () => {
+    const { parent, workspace } = await workspaceWithTwoSlides();
+    const slides = await renderInstagramSlides(workspace, "welcome");
+    const linkedIn = await createLinkedInPdf(workspace, "welcome");
+    const document = await PDFDocument.load(linkedIn.buffer);
+
+    expect(linkedIn.filename).toBe("welcome-linkedin.pdf");
+    expect(linkedIn.pageCount).toBe(slides.length);
+    expect(document.getPages().map((page) => page.getSize())).toEqual([
+      { width: LINKEDIN_PAGE_WIDTH_POINTS, height: LINKEDIN_PAGE_HEIGHT_POINTS },
+      { width: LINKEDIN_PAGE_WIDTH_POINTS, height: LINKEDIN_PAGE_HEIGHT_POINTS }
+    ]);
+
+    const pdfPath = join(parent, "linkedin.pdf");
+    const rasterPrefix = join(parent, "linkedin-page");
+    await writeFile(pdfPath, linkedIn.buffer);
+    await executeFile("pdftoppm", ["-png", "-r", "135", pdfPath, rasterPrefix]);
+
+    for (const [index, slide] of slides.entries()) {
+      const reference = await sharp(slide.png).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+      const raster = await sharp(
+        await readFile(`${rasterPrefix}-${index + 1}.png`)
+      ).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+      expect(raster.info).toEqual(expect.objectContaining({
+        width: 1080,
+        height: 1350,
+        channels: 3
+      }));
+      expect(raster.data.byteLength).toBe(reference.data.byteLength);
+
+      let maximumChannelDelta = 0;
+      let totalChannelDelta = 0;
+      let channelsOutsideTolerance = 0;
+      for (let channel = 0; channel < reference.data.byteLength; channel += 1) {
+        const delta = Math.abs(reference.data[channel]! - raster.data[channel]!);
+        maximumChannelDelta = Math.max(maximumChannelDelta, delta);
+        totalChannelDelta += delta;
+        if (delta > 8) channelsOutsideTolerance += 1;
+      }
+      expect(maximumChannelDelta).toBeLessThanOrEqual(200);
+      expect(totalChannelDelta / reference.data.byteLength).toBeLessThanOrEqual(0.5);
+      expect(channelsOutsideTolerance / reference.data.byteLength).toBeLessThanOrEqual(0.02);
+    }
+  }, 20_000);
+
+  it("writes atomically and preserves existing output when the PDF exceeds the limit", async () => {
+    const { workspace } = await workspaceWithTwoSlides();
+    const destination = join(workspace, "exports", "welcome-linkedin.pdf");
+    await writeFile(destination, "existing PDF");
+
+    await expect(
+      exportLinkedIn(workspace, "welcome", destination, { maximumBytes: 1 })
+    ).rejects.toThrow("must be smaller than 1 bytes");
+    expect(await readFile(destination, "utf8")).toBe("existing PDF");
+    expect(
+      (await readdir(join(workspace, "exports"))).some((name) => name.startsWith(".slip-"))
+    ).toBe(false);
+  });
+
+  it("rejects non-PDF and source-overlapping destinations without creating output", async () => {
+    const { workspace, carouselFile } = await workspaceWithTwoSlides();
+    const sourceBeforeExport = await readFile(carouselFile, "utf8");
+
+    await expect(
+      exportLinkedIn(workspace, "welcome", join(workspace, "exports", "linkedin.zip"))
+    ).rejects.toThrow("must end in .pdf");
+    await expect(
+      exportLinkedIn(workspace, "welcome", join(workspace, "carousels", "welcome", "slides.pdf"))
+    ).rejects.toThrow("export destination overlaps workspace source files");
+    expect(await readFile(carouselFile, "utf8")).toBe(sourceBeforeExport);
   });
 });

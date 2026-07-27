@@ -16,6 +16,7 @@ export default defineConfig({
     "jszip",
     "lightningcss",
     "open",
+    "pdf-lib",
     "sharp",
     "satori",
     "vite",

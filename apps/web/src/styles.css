@@ -99,7 +99,6 @@ h1 { font-size: clamp(54px, 9vw, 96px); line-height: .9; }
 
 .download {
   display: inline-block;
-  margin-top: 14px;
   padding: 11px 15px;
   color: #f5f0e7;
   background: #171714;
@@ -109,9 +108,26 @@ h1 { font-size: clamp(54px, 9vw, 96px); line-height: .9; }
   text-decoration: none;
 }
 
+.downloads {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.download-secondary {
+  color: #171714;
+  background: transparent;
+}
+
 .download:hover {
   color: #171714;
   background: transparent;
+}
+
+.download-secondary:hover {
+  color: #f5f0e7;
+  background: #171714;
 }
 
 .error {

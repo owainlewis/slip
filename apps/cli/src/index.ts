@@ -7,6 +7,7 @@ import {
   createCarousel,
   describeLayout,
   exportInstagram,
+  exportLinkedIn,
   initialiseWorkspace,
   layoutDefinitions,
   listLayouts,
@@ -72,21 +73,28 @@ export function createProgram(): Command {
     .command("export")
     .argument("<carousel>")
     .requiredOption("--platform <platform>", "export platform")
-    .option("--output <path>", "output directory or .zip file")
+    .option("--output <path>", "output directory, .zip file, or .pdf file")
     .description("Export a validated carousel")
     .action(async (
       carousel: string,
       options: { platform: string; output?: string }
     ) => {
-      if (options.platform !== "instagram") {
+      if (options.platform !== "instagram" && options.platform !== "linkedin") {
         throw new SlipError(
-          `unsupported platform "${options.platform}"; allowed: instagram`
+          `unsupported platform "${options.platform}"; allowed: instagram, linkedin`
         );
       }
-      const result = await exportInstagram(process.cwd(), carousel, options.output);
-      process.stdout.write(
-        `Exported ${result.files.length} Instagram PNG${result.files.length === 1 ? "" : "s"} to ${result.destination}\n`
-      );
+      if (options.platform === "instagram") {
+        const result = await exportInstagram(process.cwd(), carousel, options.output);
+        process.stdout.write(
+          `Exported ${result.files.length} Instagram PNG${result.files.length === 1 ? "" : "s"} to ${result.destination}\n`
+        );
+      } else {
+        const result = await exportLinkedIn(process.cwd(), carousel, options.output);
+        process.stdout.write(
+          `Exported ${result.pageCount}-page LinkedIn PDF to ${result.destination}\n`
+        );
+      }
     });
 
   program

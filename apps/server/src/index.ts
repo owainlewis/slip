@@ -8,6 +8,7 @@ import {
   assertWorkspace,
   carouselFiles,
   createInstagramZip,
+  createLinkedInPdf,
   readCarousel,
   renderSlideSvg,
   SlipError
@@ -145,6 +146,25 @@ export async function startSlipServer(options: StartServerOptions): Promise<Slip
           "content-type": "application/zip",
           "content-disposition": `attachment; filename="${archive.filename}"`,
           "content-length": String(archive.buffer.byteLength)
+        }
+      });
+    } catch (error) {
+      return context.json({ error: errorPayload(error, workspace) }, 422);
+    }
+  });
+  app.get("/api/carousels/:slug/linkedin.pdf", async (context) => {
+    const slug = context.req.param("slug");
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+      return context.json({ error: "invalid carousel slug" }, 400);
+    }
+    if (!cache.has(slug)) return context.json({ error: "carousel not found" }, 404);
+    try {
+      const document = await createLinkedInPdf(workspace, slug);
+      return new Response(Uint8Array.from(document.buffer).buffer, {
+        headers: {
+          "content-type": "application/pdf",
+          "content-disposition": `attachment; filename="${document.filename}"`,
+          "content-length": String(document.buffer.byteLength)
         }
       });
     } catch (error) {
