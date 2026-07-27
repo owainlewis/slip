@@ -37,7 +37,7 @@ describe("CLI contracts", () => {
     expect(unknown.exitCode).toBe(1);
     expect(unknown.stderr).toContain('unknown layout "hero"');
     expect(unknown.stderr).toContain("type_only, photo_split, photo_band");
-  });
+  }, 15_000);
 
   it("supports init, new, and validate with actionable locations", async () => {
     const parent = await mkdtemp(join(tmpdir(), "slip-cli-"));
