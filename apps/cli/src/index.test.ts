@@ -2,6 +2,7 @@ import { access, mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promi
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { execa } from "execa";
+import { PDFDocument } from "pdf-lib";
 import { afterEach, describe, expect, it } from "vitest";
 
 const cli = resolve("apps/cli/src/index.ts");
@@ -96,13 +97,25 @@ describe("CLI contracts", () => {
     expect(zipped.exitCode).toBe(0);
     expect((await readFile(zipDestination)).subarray(0, 4).toString("hex")).toBe("504b0304");
 
+    const pdfDestination = join(parent, "linkedin.pdf");
+    const linkedIn = await run(
+      ["export", "welcome", "--platform", "linkedin", "--output", pdfDestination],
+      workspace
+    );
+    expect(linkedIn.exitCode).toBe(0);
+    expect(linkedIn.stdout).toBe(`Exported 1-page LinkedIn PDF to ${pdfDestination}`);
+    const pdf = await PDFDocument.load(await readFile(pdfDestination));
+    expect(pdf.getPages().map((page) => page.getSize())).toEqual([
+      { width: 576, height: 720 }
+    ]);
+
     const unsupported = await run(
-      ["export", "welcome", "--platform", "linkedin"],
+      ["export", "welcome", "--platform", "threads"],
       workspace
     );
     expect(unsupported.exitCode).toBe(1);
     expect(unsupported.stderr).toContain(
-      'unsupported platform "linkedin"; allowed: instagram'
+      'unsupported platform "threads"; allowed: instagram, linkedin'
     );
   }, 20_000);
 });

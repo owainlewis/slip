@@ -74,13 +74,22 @@ function App() {
             <p className="kicker">Read-only preview</p>
             <h1>{preview.title}</h1>
             <p>{preview.slideCount} {preview.slideCount === 1 ? "slide" : "slides"} · updated {formatTime(preview.updatedAt)}</p>
-            <a
-              className="download"
-              href={`/api/carousels/${encodeURIComponent(preview.slug)}/instagram.zip`}
-              download={`${preview.slug}-instagram.zip`}
-            >
-              Download Instagram PNGs
-            </a>
+            <div className="downloads">
+              <a
+                className="download"
+                href={`/api/carousels/${encodeURIComponent(preview.slug)}/instagram.zip`}
+                download={`${preview.slug}-instagram.zip`}
+              >
+                Download Instagram PNGs
+              </a>
+              <a
+                className="download download-secondary"
+                href={`/api/carousels/${encodeURIComponent(preview.slug)}/linkedin.pdf`}
+                download={`${preview.slug}-linkedin.pdf`}
+              >
+                Download LinkedIn PDF
+              </a>
+            </div>
           </div>
         </header>
         {errors.map((error) => (

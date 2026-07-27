@@ -3,6 +3,7 @@ import { lstat, mkdir, realpath, rename, rm, stat, writeFile } from "node:fs/pro
 import { basename, dirname, extname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { Resvg } from "@resvg/resvg-js";
 import JSZip from "jszip";
+import { PDFDocument } from "pdf-lib";
 import sharp from "sharp";
 import { SlipError } from "./errors.js";
 import { resolveWithinWorkspace } from "./path.js";
@@ -18,6 +19,25 @@ export interface InstagramExportResult {
   destination: string;
   files: string[];
 }
+
+export interface LinkedInDocument {
+  filename: string;
+  buffer: Buffer;
+  pageCount: number;
+}
+
+export interface LinkedInExportResult {
+  destination: string;
+  pageCount: number;
+}
+
+export interface LinkedInExportOptions {
+  maximumBytes?: number;
+}
+
+export const LINKEDIN_PAGE_WIDTH_POINTS = 576;
+export const LINKEDIN_PAGE_HEIGHT_POINTS = 720;
+export const LINKEDIN_MAXIMUM_BYTES = 100 * 1024 * 1024;
 
 function instagramFilename(index: number, slideId: string): string {
   return `${String(index + 1).padStart(2, "0")}-${slideId}.png`;
@@ -82,6 +102,54 @@ export async function createInstagramZip(
       platform: "UNIX"
     }),
     files: slides.map((slide) => slide.filename)
+  };
+}
+
+function assertLinkedInSize(size: number, maximumBytes: number): void {
+  if (size >= maximumBytes) {
+    throw new SlipError(
+      `LinkedIn PDF is ${size} bytes; it must be smaller than ${maximumBytes} bytes (100 MB platform limit)`
+    );
+  }
+}
+
+export async function createLinkedInPdf(
+  workspacePath: string,
+  slug: string,
+  options: LinkedInExportOptions = {}
+): Promise<LinkedInDocument> {
+  const slides = await renderInstagramSlides(workspacePath, slug);
+  const document = await PDFDocument.create();
+  document.setTitle(slug);
+  document.setCreator("Slip");
+  document.setProducer("Slip");
+
+  for (const slide of slides) {
+    const image = await document.embedPng(slide.png);
+    const page = document.addPage([
+      LINKEDIN_PAGE_WIDTH_POINTS,
+      LINKEDIN_PAGE_HEIGHT_POINTS
+    ]);
+    page.drawImage(image, {
+      x: 0,
+      y: 0,
+      width: LINKEDIN_PAGE_WIDTH_POINTS,
+      height: LINKEDIN_PAGE_HEIGHT_POINTS
+    });
+  }
+
+  const buffer = Buffer.from(await document.save({
+    addDefaultPage: false,
+    useObjectStreams: true
+  }));
+  assertLinkedInSize(
+    buffer.byteLength,
+    options.maximumBytes ?? LINKEDIN_MAXIMUM_BYTES
+  );
+  return {
+    filename: `${slug}-linkedin.pdf`,
+    buffer,
+    pageCount: slides.length
   };
 }
 
@@ -195,4 +263,25 @@ export async function exportInstagram(
     destination,
     files: slides.map((slide) => slide.filename)
   };
+}
+
+export async function exportLinkedIn(
+  workspacePath: string,
+  slug: string,
+  outputPath?: string,
+  options: LinkedInExportOptions = {}
+): Promise<LinkedInExportResult> {
+  const workspace = await assertWorkspace(workspacePath);
+  const destination = resolve(
+    outputPath ?? join(workspace, "exports", `${slug}-linkedin.pdf`)
+  );
+  await assertSafeExportDestination(workspace, destination);
+  if (extname(destination).toLowerCase() !== ".pdf") {
+    throw new SlipError(
+      `LinkedIn export destination must end in .pdf: ${destination}`
+    );
+  }
+  const document = await createLinkedInPdf(workspace, slug, options);
+  await replaceFile(destination, document.buffer);
+  return { destination, pageCount: document.pageCount };
 }
