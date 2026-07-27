@@ -3,6 +3,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 const carouselFile = resolve(".tmp/playwright-workspace/carousels/welcome/carousel.yaml");
+const imageFile = resolve(".tmp/playwright-workspace/assets/landscape.svg");
 
 test("lists a carousel and renders every slide at 4:5", async ({ page }) => {
   await page.goto("/");
@@ -15,12 +16,12 @@ test("lists a carousel and renders every slide at 4:5", async ({ page }) => {
   });
   expect(fontsLoaded).toEqual({ inter: true, serif: true });
   const card = page.getByRole("link", { name: /Welcome to Slip/ });
-  await expect(card).toContainText("2 slides");
+  await expect(card).toContainText("3 slides");
   await expect(card).toContainText(/updated/i);
   await card.click();
 
   await expect(page.getByRole("heading", { name: "Welcome to Slip" })).toBeVisible();
-  await expect(page.getByTestId("slide")).toHaveCount(2);
+  await expect(page.getByTestId("slide")).toHaveCount(3);
   const ratio = await page.getByTestId("slide").first().evaluate((element) => {
     const box = element.getBoundingClientRect();
     return box.width / box.height;
@@ -28,6 +29,29 @@ test("lists a carousel and renders every slide at 4:5", async ({ page }) => {
   expect(ratio).toBeCloseTo(4 / 5, 2);
   await expect(page.getByTestId("slide").first().locator("svg")).toHaveAttribute("width", "1080");
   await expect(page.getByTestId("slide").first().locator("svg")).toHaveAttribute("height", "1350");
+  const resourceIds = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('[data-testid="slide"] svg [id]'), (element) => element.id)
+  );
+  expect(resourceIds.length).toBeGreaterThan(0);
+  expect(new Set(resourceIds).size).toBe(resourceIds.length);
+});
+
+test("referenced image changes refresh the photographic preview", async ({ page }) => {
+  await page.goto("/?carousel=welcome");
+  const photograph = page.getByTestId("slide").nth(2).locator("svg");
+  const before = await photograph.innerHTML();
+  try {
+    await writeFile(
+      imageFile,
+      '<svg xmlns="http://www.w3.org/2000/svg" width="5400" height="3600"><rect width="5400" height="3600" fill="#a44f38"/></svg>'
+    );
+    await expect.poll(async () => photograph.innerHTML()).not.toBe(before);
+  } finally {
+    await writeFile(
+      imageFile,
+      '<svg xmlns="http://www.w3.org/2000/svg" width="5400" height="3600"><rect width="5400" height="3600" fill="#315f45"/></svg>'
+    );
+  }
 });
 
 test("valid changes refresh and invalid content preserves the last valid preview", async ({ page }) => {

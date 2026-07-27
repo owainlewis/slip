@@ -1,7 +1,7 @@
 import { createServer as createNodeServer, type IncomingMessage } from "node:http";
 import { stat } from "node:fs/promises";
 import { createRequire } from "node:module";
-import { dirname, join, relative } from "node:path";
+import { basename, dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getRequestListener } from "@hono/node-server";
 import {
@@ -52,14 +52,14 @@ function errorPayload(error: unknown, workspace: string): { file: string; path: 
   return { file: "carousel.yaml", path: "$", message: (error as Error).message };
 }
 
-async function renderCarousel(file: string): Promise<CarouselPreview> {
-  const carousel = await readCarousel(file);
+async function renderCarousel(file: string, workspace: string): Promise<CarouselPreview> {
+  const carousel = await readCarousel(file, workspace);
   const fileStat = await stat(file);
   const slides = await Promise.all(
-    carousel.slides.map(async (slide) => ({
+    carousel.slides.map(async (slide, slideIndex) => ({
       id: slide.id,
       headline: slide.content.headline,
-      svg: await renderSlideSvg(slide)
+      svg: await renderSlideSvg(slide, { carouselFile: file, workspace, slideIndex })
     }))
   );
   return {
@@ -84,15 +84,20 @@ export async function startSlipServer(options: StartServerOptions): Promise<Slip
   const host = options.host ?? "127.0.0.1";
   const port = options.port ?? 0;
   const cache = new Map<string, CacheEntry>();
+  const loadGenerations = new Map<string, number>();
   let version = 0;
 
   const load = async (file: string): Promise<void> => {
     const slug = file.split(/[\\/]/).at(-2)!;
+    const generation = (loadGenerations.get(slug) ?? 0) + 1;
+    loadGenerations.set(slug, generation);
     const previous = cache.get(slug);
     try {
-      const carousel = await renderCarousel(file);
+      const carousel = await renderCarousel(file, workspace);
+      if (loadGenerations.get(slug) !== generation) return;
       cache.set(slug, { file, carousel });
     } catch (error) {
+      if (loadGenerations.get(slug) !== generation) return;
       cache.set(slug, { file, carousel: previous?.carousel, error: errorPayload(error, workspace) });
     }
     version += 1;
@@ -137,6 +142,8 @@ export async function startSlipServer(options: StartServerOptions): Promise<Slip
   ];
   let vite: ViteDevServer | undefined;
   let watcher: FSWatcher | undefined;
+  let reloadTimer: NodeJS.Timeout | undefined;
+  const pendingReloads = new Set<string>();
   let actualPort = port;
 
   const server = createNodeServer((request, response) => {
@@ -178,22 +185,50 @@ export async function startSlipServer(options: StartServerOptions): Promise<Slip
     const address = server.address();
     if (!address || typeof address === "string") throw new Error("server did not bind a TCP port");
     actualPort = address.port;
-    watcher = chokidar.watch(`${workspace}/carousels`, {
+    watcher = chokidar.watch(workspace, {
       ignoreInitial: true,
+      ignored: (path) => {
+        const workspacePath = relative(workspace, path);
+        return workspacePath === "exports" || workspacePath.startsWith(`exports${sep}`);
+      },
       awaitWriteFinish: { stabilityThreshold: 80, pollInterval: 20 }
     });
+    const scheduleReload = (files: string[]) => {
+      files.forEach((file) => pendingReloads.add(file));
+      if (reloadTimer) clearTimeout(reloadTimer);
+      reloadTimer = setTimeout(() => {
+        reloadTimer = undefined;
+        const filesToLoad = [...pendingReloads];
+        pendingReloads.clear();
+        void Promise.all(filesToLoad.map(load));
+      }, 120);
+    };
     watcher.on("add", (file) => {
-      if (file.endsWith("/carousel.yaml")) void load(file);
+      if (basename(file) === "carousel.yaml") {
+        scheduleReload([file]);
+      } else {
+        scheduleReload([...cache.values()].map((entry) => entry.file));
+      }
     });
     watcher.on("change", (file) => {
-      if (file.endsWith("/carousel.yaml")) void load(file);
+      if (basename(file) === "carousel.yaml") {
+        scheduleReload([file]);
+      } else {
+        scheduleReload([...cache.values()].map((entry) => entry.file));
+      }
     });
     watcher.on("unlink", (file) => {
-      if (!file.endsWith("/carousel.yaml")) return;
-      const slug = file.split(/[\\/]/).at(-2)!;
-      cache.delete(slug);
-      version += 1;
+      if (basename(file) === "carousel.yaml") {
+        const slug = file.split(/[\\/]/).at(-2)!;
+        pendingReloads.delete(file);
+        loadGenerations.set(slug, (loadGenerations.get(slug) ?? 0) + 1);
+        cache.delete(slug);
+        version += 1;
+      } else {
+        scheduleReload([...cache.values()].map((entry) => entry.file));
+      }
     });
+    await new Promise<void>((resolve) => watcher!.once("ready", resolve));
   } catch (error) {
     await vite?.close();
     server.close();
@@ -203,6 +238,7 @@ export async function startSlipServer(options: StartServerOptions): Promise<Slip
   return {
     url: `http://${host}:${actualPort}`,
     async close() {
+      if (reloadTimer) clearTimeout(reloadTimer);
       await watcher?.close();
       await vite?.close();
       await new Promise<void>((resolve, reject) =>

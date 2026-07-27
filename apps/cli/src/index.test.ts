@@ -17,6 +17,27 @@ afterEach(async () => {
 });
 
 describe("CLI contracts", () => {
+  it("lists and documents every registered layout", async () => {
+    const list = await run(["layouts"], process.cwd());
+    expect(list.exitCode).toBe(0);
+    expect(list.stdout).toContain("type_only");
+    expect(list.stdout).toContain("photo_split");
+    expect(list.stdout).toContain("photo_band");
+
+    const detail = await run(["layouts", "photo_split"], process.cwd());
+    expect(detail.exitCode).toBe(0);
+    expect(detail.stdout).toContain("content.headline  required, 1–80 characters");
+    expect(detail.stdout).toContain("image.position    [x, y], each 0–1 inclusive");
+    expect(detail.stdout).toContain("image.zoom        1–3 (default: 1)");
+    expect(detail.stdout).toContain("options.side      left | right (default: left)");
+    expect(detail.stdout).toContain("layout: photo_split");
+
+    const unknown = await run(["layouts", "hero"], process.cwd());
+    expect(unknown.exitCode).toBe(1);
+    expect(unknown.stderr).toContain('unknown layout "hero"');
+    expect(unknown.stderr).toContain("type_only, photo_split, photo_band");
+  });
+
   it("supports init, new, and validate with actionable locations", async () => {
     const parent = await mkdtemp(join(tmpdir(), "slip-cli-"));
     directories.push(parent);
