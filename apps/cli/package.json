@@ -1,0 +1,29 @@
+{
+  "name": "@slip/cli",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "slip": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsup"
+  },
+  "dependencies": {
+    "@fontsource/inter": "^5.2.6",
+    "@fontsource/source-serif-4": "^5.2.6",
+    "@hono/node-server": "^1.18.0",
+    "@slip/core": "workspace:*",
+    "@slip/server": "workspace:*",
+    "chokidar": "^4.0.3",
+    "commander": "^14.0.0",
+    "hono": "^4.8.10",
+    "open": "^10.2.0",
+    "satori": "^0.18.3",
+    "vite": "^7.0.6",
+    "yaml": "^2.8.0",
+    "zod": "^4.0.10"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0"
+  }
+}

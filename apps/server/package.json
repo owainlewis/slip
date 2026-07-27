@@ -1,0 +1,16 @@
+{
+  "name": "@slip/server",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.18.0",
+    "@slip/core": "workspace:*",
+    "chokidar": "^4.0.3",
+    "hono": "^4.8.10",
+    "vite": "^7.0.6"
+  }
+}

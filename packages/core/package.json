@@ -1,0 +1,16 @@
+{
+  "name": "@slip/core",
+  "private": true,
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "build": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@fontsource/inter": "^5.2.6",
+    "@fontsource/source-serif-4": "^5.2.6",
+    "satori": "^0.18.3",
+    "yaml": "^2.8.0",
+    "zod": "^4.0.10"
+  }
+}
