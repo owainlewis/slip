@@ -1,23 +1,45 @@
 schemaVersion: 1
 id: opposite-sides
-title: Opposite sides
+title: Attention compounds
 slides:
   - id: centered
     layout: type_only
     content:
-      eyebrow: A SECOND RHYTHM
-      headline: Centered type changes the pace
-      body: The contract stays constrained while the composition gains a deliberate counterpoint.
+      eyebrow: A QUIETER ADVANTAGE
+      headline: |-
+        Attention
+        compounds.
+      emphasis: Attention
+      body: The things you notice today become the standards you refuse to lower tomorrow.
     options:
       align: center
+      tone: paper
+      emphasisStyle: italic
   - id: image-right
     layout: photo_split
     content:
-      headline: Photography can lead from either edge
-      body: The text always remains on the fixed warm-white half of the canvas.
+      headline: |-
+        Look long
+        enough to see.
+      emphasis: see
+      body: A strong point of view is usually accumulated before it is expressed.
     image:
-      src: ../../assets/portrait.svg
-      position: [0.5, 0.5]
-      zoom: 1
+      src: ../../assets/sea-cliff.jpg
+      position: [0.76, 0.5]
+      zoom: 1.2
     options:
       side: right
+      tone: ink
+      emphasisStyle: italic
+  - id: finish
+    layout: type_only
+    content:
+      headline: |-
+        Care is a
+        repeatable edge.
+      emphasis: Care
+      body: Not decoration. Not polish at the end. A way of choosing from the beginning.
+    options:
+      align: left
+      tone: ink
+      emphasisStyle: mark

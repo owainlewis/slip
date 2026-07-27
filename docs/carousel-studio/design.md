@@ -99,19 +99,30 @@ slides:
   - id: cover
     layout: photo_band
     content:
-      headline: Software is becoming disposable
+      headline: |-
+        Software is becoming
+        disposable
+      emphasis: disposable
       caption: The value is moving somewhere else.
     image:
-      src: ../../assets/circuit-board.jpg
+      src: ../../assets/mountain-range.jpg
       position: [0.62, 0.44]
       zoom: 1.2
+    options:
+      tone: paper
+      emphasisStyle: mark
   - id: argument
     layout: type_only
     content:
-      headline: Code is no longer the scarce part
+      headline: |-
+        Code is no longer
+        the scarce part
+      emphasis: scarce
       body: Judgment, context, and distribution are harder to reproduce.
     options:
       align: left
+      tone: ink
+      emphasisStyle: italic
 ```
 
 Documents use a discriminated union keyed by `layout`. Unknown keys are
@@ -124,30 +135,41 @@ renderer uses `cover`, applies zoom, centres the requested position in the
 layout's image region, and clamps the result to the image bounds. There is no
 separate crop representation.
 
+YAML literal blocks preserve explicit headline and supporting-copy line
+breaks. `content.emphasis` optionally names an exact phrase in the headline.
+`options.emphasisStyle` renders that phrase as `italic` or `mark`, while
+`options.tone` selects the shared `paper` or `ink` palette. All new fields are
+optional and default to the original light treatment, preserving existing
+schema version 1 documents.
+
 ### MVP layout contracts
 
 | Layout | Content | Image | Options | Geometry |
 | --- | --- | --- | --- | --- |
-| `type_only` | `headline` required, 1–100 chars; `body` optional, 1–260 chars; `eyebrow` optional, 1–40 chars | Not allowed | `align`: `left` or `center`, default `left` | Text on solid warm-white canvas |
-| `photo_split` | `headline` required, 1–80 chars; `body` optional, 1–220 chars | Required | `side`: `left` or `right`, default `left` | Image occupies 50%; text occupies opaque 50% |
-| `photo_band` | `headline` required, 1–80 chars; `caption` optional, 1–120 chars | Required | None | Image occupies upper 62%; text occupies opaque lower 38% |
+| `type_only` | `headline` required, 1–100 chars; `emphasis` optional exact phrase, 1–48 chars; `body` optional, 1–260 chars; `eyebrow` optional, 1–40 chars | Not allowed | `align`: `left` or `center`; `tone`: `paper` or `ink`; `emphasisStyle`: `italic` or `mark` | Oversized type on a tactile paper or ink canvas |
+| `photo_split` | `headline` required, 1–80 chars; `emphasis` optional exact phrase, 1–48 chars; `body` optional, 1–220 chars | Required | `side`: `left` or `right`; shared tone and emphasis options | Full-height 65% crop with an offset opaque text surface that overlaps the image |
+| `photo_band` | `headline` required, 1–80 chars; `emphasis` optional exact phrase, 1–48 chars; `caption` optional, 1–120 chars | Required | Shared tone and emphasis options | Wide crop with an asymmetric inset opaque text surface |
 
-All layouts use fixed regions, type styles, spacing, and safe areas. They
-never place text directly over photography. Overflow is an export-blocking
-validation error rather than triggering auto-shrink or truncation.
+All layouts use fixed regions, type styles, spacing, and safe areas. Text
+surfaces remain fully opaque even where they overlap photography. Overflow is
+an export-blocking validation error rather than triggering auto-shrink or
+truncation.
 
 Changing a layout is a manual YAML edit. Compatible field migration is outside
 the MVP.
 
 ### Visual system
 
-The single theme uses:
+The single editorial system uses:
 
 - 1080 × 1350 pixel canvas;
-- warm-white, near-black, and one muted accent colour;
-- one bundled serif and one bundled sans-serif font;
-- fixed type sizes, line heights, tracking, spacing, and safe areas;
-- square corners and restrained rules.
+- warm paper, near-black ink, quiet supporting tones, and one restrained accent;
+- bundled regular and italic editorial serif faces with a neutral sans-serif;
+- authored headline line breaks and explicit phrase emphasis;
+- asymmetric crops, offset opaque text surfaces, and purposeful whitespace;
+- fixed, deterministic paper texture shared by preview, PNG, and PDF rendering;
+- quiet context-driven folios such as `01 / 05`;
+- square corners and no repeated brand footer.
 
 The system excludes gradients, glass effects, decorative blobs, icon grids,
 excessive cards, automatic word highlighting, and user-authored CSS.
@@ -240,7 +262,9 @@ one pnpm workspace.
   download actions.
 - Rasterize LinkedIn PDFs and compare their pages with the PNG render fixtures.
 - Keep three complete example carousels as a visual review corpus covering all
-  layouts, image sides, alignments, and content limits.
+  layouts, tones, emphasis styles, image sides, alignments, and content limits.
+- Use checked-in real photographic fixtures with explicit source and license
+  attribution.
 
 ## Risks
 
@@ -250,8 +274,9 @@ one pnpm workspace.
   help from the same contracts.
 - **Layouts become one-offs:** add a layout only when the review corpus exposes
   a repeated content shape.
-- **Photography feels generic:** expressive choices come from the user's image,
-  crop, sequence, and copy rather than decorative styling.
+- **Photography feels generic:** expressive choices come from the user's real
+  image, crop, sequence, and copy rather than decorative styling. Example
+  fixtures use clearly licensed photographs, never generated placeholder art.
 - **Platform requirements change:** keep platform limits in one tested module
   with a last-verified date.
 

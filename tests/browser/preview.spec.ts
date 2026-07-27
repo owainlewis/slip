@@ -6,7 +6,7 @@ import { PDFDocument } from "pdf-lib";
 import sharp from "sharp";
 
 const carouselFile = resolve(".tmp/playwright-workspace/carousels/essential/carousel.yaml");
-const imageFile = resolve(".tmp/playwright-workspace/assets/landscape.svg");
+const imageFile = resolve(".tmp/playwright-workspace/assets/sierra-nevada.jpg");
 
 const examples = [
   {
@@ -16,13 +16,19 @@ const examples = [
   },
   {
     slug: "essential",
-    title: "The essential layouts",
-    files: ["01-type.png", "02-split.png", "03-band.png"]
+    title: "What survives when code gets cheap",
+    files: [
+      "01-cover.png",
+      "02-upstream.png",
+      "03-survives.png",
+      "04-wider-field.png",
+      "05-close.png"
+    ]
   },
   {
     slug: "opposite-sides",
-    title: "Opposite sides",
-    files: ["01-centered.png", "02-image-right.png"]
+    title: "Attention compounds",
+    files: ["01-centered.png", "02-image-right.png", "03-finish.png"]
   }
 ];
 
@@ -61,6 +67,10 @@ test("lists and previews every polished example at 4:5", async ({ page }) => {
     expect(ratio).toBeCloseTo(4 / 5, 2);
     await expect(page.getByTestId("slide").first().locator("svg")).toHaveAttribute("width", "1080");
     await expect(page.getByTestId("slide").first().locator("svg")).toHaveAttribute("height", "1350");
+    await expect(page.getByTestId("slide").first().locator("svg")).toHaveAttribute(
+      "data-folio-value",
+      `01 / ${String(example.files.length).padStart(2, "0")}`
+    );
     const resourceIds = await page.evaluate(() =>
       Array.from(document.querySelectorAll('[data-testid="slide"] svg [id]'), (element) => element.id)
     );
@@ -69,29 +79,67 @@ test("lists and previews every polished example at 4:5", async ({ page }) => {
   }
 });
 
+test("keeps editorial previews readable at desktop and narrow viewports", async ({ page }) => {
+  for (const viewport of [
+    { width: 1440, height: 1000 },
+    { width: 375, height: 812 }
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/?carousel=essential");
+    await expect(page.getByRole("heading", { name: "What survives when code gets cheap" })).toBeVisible();
+    await expect(page.getByTestId("slide")).toHaveCount(5);
+    await expect(page.getByTestId("slide").first().locator("svg")).toHaveAttribute(
+      "data-emphasis-style",
+      "italic"
+    );
+    await expect(page.getByTestId("slide").nth(1).locator("svg")).toHaveAttribute(
+      "data-emphasis-style",
+      "mark"
+    );
+    const viewportFit = await page.evaluate(() => ({
+      bodyWidth: document.body.scrollWidth,
+      viewportWidth: document.documentElement.clientWidth
+    }));
+    expect(viewportFit.bodyWidth).toBeLessThanOrEqual(viewportFit.viewportWidth);
+    const ratio = await page.getByTestId("slide").first().evaluate((element) => {
+      const box = element.getBoundingClientRect();
+      return box.width / box.height;
+    });
+    expect(ratio).toBeCloseTo(4 / 5, 2);
+  }
+});
+
 test("referenced image changes refresh the photographic preview", async ({ page }) => {
   await page.goto("/?carousel=essential");
-  const photograph = page.getByTestId("slide").nth(2).locator("svg");
+  const photograph = page.getByTestId("slide").nth(1).locator("svg");
   const before = await photograph.innerHTML();
-  const originalImage = await readFile(imageFile, "utf8");
+  const originalImage = await readFile(imageFile);
+  const replacementImage = await sharp({
+    create: {
+      width: 3840,
+      height: 2560,
+      channels: 3,
+      background: "#a44f38"
+    }
+  }).jpeg().toBuffer();
   try {
-    await writeFile(
-      imageFile,
-      '<svg xmlns="http://www.w3.org/2000/svg" width="5400" height="3600"><rect width="5400" height="3600" fill="#a44f38"/></svg>'
-    );
+    await writeFile(imageFile, replacementImage);
     await expect.poll(async () => photograph.innerHTML()).not.toBe(before);
   } finally {
     await writeFile(imageFile, originalImage);
+    await expect.poll(async () => photograph.innerHTML()).toBe(before);
   }
 });
 
 test("valid changes refresh and invalid content preserves the last valid preview", async ({ page }) => {
   await page.goto("/?carousel=essential");
-  await expect(page.getByLabel("Slide 1: One clear thought")).toBeVisible();
+  await expect(page.getByLabel("Slide 1: Code is cheap. Context is not.")).toBeVisible();
   const original = await readFile(carouselFile, "utf8");
-  const valid = original.replace("One clear thought", "A valid live update");
+  const valid = original
+    .replace("Code is cheap.", "A valid live update.")
+    .replace("      emphasis: Context\n", "");
   await writeFile(carouselFile, valid);
-  await expect(page.getByLabel("Slide 1: A valid live update")).toBeVisible();
+  await expect(page.getByLabel("Slide 1: A valid live update. Context is not.")).toBeVisible();
 
   await writeFile(carouselFile, valid.replace("align: left", "align: diagonal"));
   const alert = page.getByRole("alert");
@@ -99,7 +147,7 @@ test("valid changes refresh and invalid content preserves the last valid preview
   await expect(alert).toContainText('received: "diagonal"');
   await expect(alert).toContainText("allowed: left, center");
   await expect(alert).toContainText("last valid preview");
-  await expect(page.getByLabel("Slide 1: A valid live update")).toBeVisible();
+  await expect(page.getByLabel("Slide 1: A valid live update. Context is not.")).toBeVisible();
 
   await writeFile(carouselFile, original);
   await expect(page.getByRole("alert")).toHaveCount(0);

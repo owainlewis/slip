@@ -12,7 +12,12 @@ import type {
 } from "./layouts.js";
 
 const require = createRequire(import.meta.url);
-let fontsPromise: Promise<{ serif: ArrayBuffer; sans: ArrayBuffer }> | undefined;
+let fontsPromise: Promise<{
+  serif: ArrayBuffer;
+  serifItalic: ArrayBuffer;
+  sans: ArrayBuffer;
+  sansSemibold: ArrayBuffer;
+}> | undefined;
 
 type Element = {
   type: string;
@@ -24,71 +29,247 @@ type Element = {
   };
 };
 
+type Tone = "paper" | "ink";
+type EmphasisStyle = "italic" | "mark";
+
 export interface RenderContext {
   carouselFile: string;
   workspace: string;
   slideIndex?: number;
+  slideCount?: number;
 }
 
-async function loadFonts(): Promise<{ serif: ArrayBuffer; sans: ArrayBuffer }> {
+const palettes = {
+  paper: {
+    background: "#eee8dc",
+    ink: "#211f1b",
+    muted: "#625d53",
+    accent: "#9f4f38",
+    marked: "#d8df7a",
+    markedInk: "#211f1b"
+  },
+  ink: {
+    background: "#20231f",
+    ink: "#f1eadc",
+    muted: "#c6bdad",
+    accent: "#d8df7a",
+    marked: "#d8df7a",
+    markedInk: "#20231f"
+  }
+} as const;
+
+async function loadFonts() {
   fontsPromise ??= Promise.all([
-    readFile(require.resolve("@fontsource/source-serif-4/files/source-serif-4-latin-700-normal.woff")),
-    readFile(require.resolve("@fontsource/inter/files/inter-latin-400-normal.woff"))
-  ]).then(([serif, sans]) => ({
+    readFile(require.resolve("@fontsource/source-serif-4/files/source-serif-4-latin-400-normal.woff")),
+    readFile(require.resolve("@fontsource/source-serif-4/files/source-serif-4-latin-400-italic.woff")),
+    readFile(require.resolve("@fontsource/inter/files/inter-latin-400-normal.woff")),
+    readFile(require.resolve("@fontsource/inter/files/inter-latin-600-normal.woff"))
+  ]).then(([serif, serifItalic, sans, sansSemibold]) => ({
     serif: serif.buffer.slice(serif.byteOffset, serif.byteOffset + serif.byteLength),
-    sans: sans.buffer.slice(sans.byteOffset, sans.byteOffset + sans.byteLength)
+    serifItalic: serifItalic.buffer.slice(
+      serifItalic.byteOffset,
+      serifItalic.byteOffset + serifItalic.byteLength
+    ),
+    sans: sans.buffer.slice(sans.byteOffset, sans.byteOffset + sans.byteLength),
+    sansSemibold: sansSemibold.buffer.slice(
+      sansSemibold.byteOffset,
+      sansSemibold.byteOffset + sansSemibold.byteLength
+    )
   }));
   return fontsPromise;
 }
 
-function footer(centered = false): Element {
-  return {
-    type: "div",
-    key: "footer",
+function paperTexture(): Element {
+  const flecks = Array.from({ length: 96 }, (_, index) => ({
+    type: "circle",
+    key: `fleck-${index}`,
     props: {
-      "data-footer": true,
+      cx: (index * 383 + (index % 7) * 71) % 1080,
+      cy: (index * 617 + (index % 11) * 43) % 1350,
+      r: index % 5 === 0 ? 1.4 : 0.8,
+      fill: "#756f64",
+      opacity: index % 3 === 0 ? 0.55 : 0.32
+    }
+  }));
+  const fibres = Array.from({ length: 18 }, (_, index) => {
+    const x = (index * 479 + 83) % 1040;
+    const y = (index * 733 + 127) % 1320;
+    return {
+      type: "path",
+      key: `fibre-${index}`,
+      props: {
+        d: `M ${x} ${y} l ${6 + (index % 4) * 3} ${index % 2 === 0 ? 1 : -1}`,
+        fill: "none",
+        stroke: "#756f64",
+        strokeWidth: 0.7,
+        opacity: 0.28
+      }
+    };
+  });
+
+  return {
+    type: "svg",
+    key: "paper-texture",
+    props: {
+      width: 1080,
+      height: 1350,
+      viewBox: "0 0 1080 1350",
+      preserveAspectRatio: "none",
+      "aria-hidden": "true",
       style: {
+        position: "absolute",
+        inset: 0,
         width: "100%",
-        display: "flex",
-        justifyContent: centered ? "center" : "flex-start",
-        borderTop: "2px solid #c6bfb3",
-        paddingTop: 24,
-        fontFamily: "Inter",
-        fontSize: 22,
-        letterSpacing: "0.08em",
-        color: "#6b665e"
+        height: "100%",
+        opacity: 0.16,
+        pointerEvents: "none"
       },
-      children: "SLIP"
+      children: [...flecks, ...fibres]
     }
   };
 }
 
-function typeOnly(slide: TypeOnlySlide): Element {
-  const centered = slide.options.align === "center";
+function folio(context: RenderContext | undefined, tone: Tone): Element | null {
+  if (context?.slideIndex === undefined || context.slideCount === undefined) return null;
+  const palette = palettes[tone];
+  const value = `${String(context.slideIndex + 1).padStart(2, "0")} / ${String(
+    context.slideCount
+  ).padStart(2, "0")}`;
+  return {
+    type: "div",
+    key: "folio",
+    props: {
+      "data-folio": true,
+      "data-folio-value": value,
+      style: {
+        fontFamily: "Inter",
+        fontSize: 18,
+        fontWeight: 600,
+        letterSpacing: "0.12em",
+        color: palette.muted
+      },
+      children: value
+    }
+  };
+}
+
+function headlineLineChildren(
+  line: string,
+  emphasis: string | undefined,
+  emphasisStyle: EmphasisStyle,
+  tone: Tone
+): unknown {
+  if (!emphasis) return line;
+  const index = line.indexOf(emphasis);
+  if (index < 0) return line;
+  const palette = palettes[tone];
+  const remainder = line.slice(index + emphasis.length);
+  const punctuation = remainder.match(/^[,.;:!?…]+/)?.[0] ?? "";
+  const emphasisCss = emphasisStyle === "mark"
+    ? {
+        color: palette.ink,
+        textDecorationLine: "underline",
+        textDecorationStyle: "solid",
+        textDecorationColor: palette.marked
+      }
+    : {
+        fontStyle: "italic",
+        color: palette.accent
+      };
+  return [
+    line.slice(0, index),
+    {
+      type: "span",
+      key: "headline-emphasis",
+      props: {
+        "data-emphasis": emphasisStyle,
+        style: emphasisCss,
+        children: `${emphasis}${punctuation}`
+      }
+    },
+    remainder.slice(punctuation.length)
+  ];
+}
+
+function headline(
+  content: { headline: string; emphasis?: string },
+  tone: Tone,
+  emphasisStyle: EmphasisStyle,
+  style: Record<string, unknown>
+): Element {
+  let emphasisRendered = false;
+  return {
+    type: "div",
+    key: "field:content.headline",
+    props: {
+      "data-field": "content.headline",
+      style: {
+        display: "flex",
+        flexDirection: "column",
+        fontFamily: "Source Serif 4",
+        fontWeight: 400,
+        wordBreak: "break-word",
+        ...style
+      },
+      children: content.headline.split("\n").map((line, index) => {
+        const lineEmphasis = !emphasisRendered && content.emphasis && line.includes(content.emphasis)
+          ? content.emphasis
+          : undefined;
+        if (lineEmphasis) emphasisRendered = true;
+        return {
+          type: "div",
+          key: `headline-line-${index}`,
+          props: {
+            "data-headline-line": index + 1,
+            style: {
+              width: "100%",
+              display: "flex",
+              flexWrap: "wrap",
+              whiteSpace: "pre-wrap",
+              justifyContent: style.textAlign === "center" ? "center" : "flex-start"
+            },
+            children: headlineLineChildren(line, lineEmphasis, emphasisStyle, tone)
+          }
+        };
+      })
+    }
+  };
+}
+
+function typeOnly(slide: TypeOnlySlide, context?: RenderContext): Element {
+  const { align, tone, emphasisStyle } = slide.options;
+  const centered = align === "center";
+  const palette = palettes[tone];
   return {
     type: "div",
     props: {
       style: {
+        position: "relative",
         width: "100%",
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        justifyContent: "space-between",
-        padding: "108px 96px 92px",
-        background: "#f5f0e7",
-        color: "#171714",
-        textAlign: centered ? "center" : "left",
-        alignItems: centered ? "center" : "flex-start"
+        justifyContent: "center",
+        alignItems: centered ? "center" : "flex-start",
+        overflow: "hidden",
+        padding: centered ? "120px 88px 154px" : "116px 86px 150px",
+        background: palette.background,
+        color: palette.ink,
+        textAlign: centered ? "center" : "left"
       },
       children: [
+        paperTexture(),
         {
           type: "div",
           props: {
             style: {
+              position: "relative",
               display: "flex",
               flexDirection: "column",
               alignItems: centered ? "center" : "flex-start",
-              width: "100%"
+              width: "100%",
+              maxWidth: centered ? 900 : 920,
+              marginTop: centered ? -24 : 48
             },
             children: [
               slide.content.eyebrow
@@ -96,224 +277,165 @@ function typeOnly(slide: TypeOnlySlide): Element {
                     type: "div",
                     key: "field:content.eyebrow",
                     props: {
+                      "data-field": "content.eyebrow",
                       style: {
                         fontFamily: "Inter",
-                        fontSize: 24,
-                        letterSpacing: "0.16em",
-                        color: "#9a4f3d",
-                        marginBottom: 58,
+                        fontSize: 21,
+                        fontWeight: 600,
+                        lineHeight: 1.2,
+                        letterSpacing: "0.18em",
+                        color: palette.accent,
+                        marginBottom: 52,
+                        whiteSpace: "pre-wrap",
                         wordBreak: "break-word"
                       },
-                      "data-field": "content.eyebrow",
                       children: slide.content.eyebrow.toUpperCase()
                     }
                   }
                 : null,
-              {
-                type: "div",
-                key: "field:content.headline",
-                props: {
-                  style: {
-                    fontFamily: "Source Serif 4",
-                    fontSize: 92,
-                    fontWeight: 700,
-                    lineHeight: 1.02,
-                    letterSpacing: "-0.035em",
-                    maxWidth: 888,
-                    wordBreak: "break-word"
-                  },
-                  "data-field": "content.headline",
-                  children: slide.content.headline
-                }
-              },
+              headline(slide.content, tone, emphasisStyle, {
+                fontSize: centered ? 96 : 104,
+                lineHeight: 0.94,
+                letterSpacing: "-0.038em",
+                maxWidth: centered ? 900 : 920,
+                textAlign: centered ? "center" : "left"
+              }),
               slide.content.body
                 ? {
                     type: "div",
                     key: "field:content.body",
                     props: {
+                      "data-field": "content.body",
                       style: {
                         fontFamily: "Inter",
-                        fontSize: 30,
-                        lineHeight: 1.42,
-                        maxWidth: 800,
-                        marginTop: 46,
-                        color: "#44423d",
+                        fontSize: 29,
+                        lineHeight: 1.48,
+                        maxWidth: centered ? 760 : 730,
+                        marginTop: 54,
+                        color: palette.muted,
+                        whiteSpace: "pre-wrap",
                         wordBreak: "break-word"
                       },
-                      "data-field": "content.body",
                       children: slide.content.body
                     }
                   }
                 : null
             ]
-          }
-        },
-        footer(centered)
-      ]
-    }
-  };
-}
-
-function photoSplit(slide: PhotoSplitSlide, image: string): Element {
-  const photograph: Element = {
-    type: "img",
-    props: {
-      src: image,
-      width: 540,
-      height: 1350,
-      style: { width: 540, height: 1350, objectFit: "fill" }
-    }
-  };
-  const copy: Element = {
-    type: "div",
-    props: {
-      style: {
-        width: 540,
-        height: 1350,
-        padding: "88px 64px 72px",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        background: "#f5f0e7",
-        color: "#171714"
-      },
-      children: [
-        {
-          type: "div",
-          props: {
-            style: { display: "flex", flexDirection: "column" },
-            children: [
-              {
-                type: "div",
-                key: "field:content.headline",
-                props: {
-                  style: {
-                    fontFamily: "Source Serif 4",
-                    fontSize: 66,
-                    fontWeight: 700,
-                    lineHeight: 1.02,
-                    letterSpacing: "-0.035em",
-                    wordBreak: "break-word"
-                  },
-                  "data-field": "content.headline",
-                  children: slide.content.headline
-                }
-              },
-              slide.content.body
-                  ? {
-                    type: "div",
-                    key: "field:content.body",
-                    props: {
-                      style: {
-                        fontFamily: "Inter",
-                        fontSize: 28,
-                        lineHeight: 1.42,
-                        marginTop: 42,
-                        color: "#44423d",
-                        wordBreak: "break-word"
-                      },
-                      "data-field": "content.body",
-                      children: slide.content.body
-                    }
-                  }
-                : null
-            ]
-          }
-        },
-        footer()
-      ]
-    }
-  };
-  return {
-    type: "div",
-    props: {
-      style: { width: "100%", height: "100%", display: "flex", flexDirection: "row" },
-      children: slide.options.side === "left" ? [photograph, copy] : [copy, photograph]
-    }
-  };
-}
-
-function photoBand(slide: PhotoBandSlide, image: string): Element {
-  return {
-    type: "div",
-    props: {
-      style: {
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        flexDirection: "column",
-        background: "#f5f0e7",
-        color: "#171714"
-      },
-      children: [
-        {
-          type: "img",
-          props: {
-            src: image,
-            width: 1080,
-            height: 837,
-            style: { width: 1080, height: 837, objectFit: "fill" }
           }
         },
         {
           type: "div",
           props: {
             style: {
-              width: 1080,
-              height: 513,
-              padding: "56px 84px 50px",
+              position: "absolute",
+              bottom: 62,
+              display: "flex",
+              justifyContent: centered ? "center" : "flex-end",
+              ...(centered ? { left: 0, right: 0 } : { right: 86 })
+            },
+            children: folio(context, tone)
+          }
+        }
+      ]
+    }
+  };
+}
+
+function photoSplit(slide: PhotoSplitSlide, image: string, context: RenderContext): Element {
+  const { side, tone, emphasisStyle } = slide.options;
+  const palette = palettes[tone];
+  const photographLeft = side === "left" ? 0 : 378;
+  const surfaceLeft = side === "left" ? 493 : 62;
+  return {
+    type: "div",
+    props: {
+      style: {
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        overflow: "hidden",
+        background: palette.background,
+        color: palette.ink
+      },
+      children: [
+        {
+          type: "img",
+          props: {
+            src: image,
+            width: 702,
+            height: 1350,
+            style: {
+              position: "absolute",
+              left: photographLeft,
+              top: 0,
+              width: 702,
+              height: 1350,
+              objectFit: "fill"
+            }
+          }
+        },
+        {
+          type: "div",
+          props: {
+            style: {
+              position: "absolute",
+              left: surfaceLeft,
+              top: 126,
+              width: 525,
+              height: 1098,
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
-              background: "#f5f0e7"
+              overflow: "hidden",
+              padding: "68px 58px 48px",
+              background: palette.background
             },
             children: [
+              paperTexture(),
               {
                 type: "div",
                 props: {
-                  style: { display: "flex", alignItems: "flex-start", width: "100%" },
+                  style: {
+                    position: "relative",
+                    display: "flex",
+                    flexDirection: "column"
+                  },
                   children: [
-                    {
-                      type: "div",
-                      key: "field:content.headline",
-                      props: {
-                        style: {
-                          width: slide.content.caption ? 560 : 860,
-                          fontFamily: "Source Serif 4",
-                          fontSize: 64,
-                          fontWeight: 700,
-                          lineHeight: 1,
-                          letterSpacing: "-0.035em",
-                          wordBreak: "break-word"
-                        },
-                        "data-field": "content.headline",
-                        children: slide.content.headline
-                      }
-                    },
-                    slide.content.caption
+                    headline(slide.content, tone, emphasisStyle, {
+                      fontSize: 66,
+                      lineHeight: 0.96,
+                      letterSpacing: "-0.035em"
+                    }),
+                    slide.content.body
                       ? {
                           type: "div",
-                          key: "field:content.caption",
+                          key: "field:content.body",
                           props: {
+                            "data-field": "content.body",
                             style: {
-                              width: 310,
-                              marginLeft: "auto",
-                              paddingTop: 8,
                               fontFamily: "Inter",
-                              fontSize: 24,
-                              lineHeight: 1.4,
-                              color: "#44423d",
+                              fontSize: 25,
+                              lineHeight: 1.46,
+                              marginTop: 42,
+                              color: palette.muted,
+                              whiteSpace: "pre-wrap",
                               wordBreak: "break-word"
                             },
-                            "data-field": "content.caption",
-                            children: slide.content.caption
+                            children: slide.content.body
                           }
                         }
                       : null
                   ]
                 }
               },
-              footer()
+              {
+                type: "div",
+                props: {
+                  style: { position: "relative", display: "flex" },
+                  children: folio(context, tone)
+                }
+              }
             ]
           }
         }
@@ -322,13 +444,130 @@ function photoBand(slide: PhotoBandSlide, image: string): Element {
   };
 }
 
+function photoBand(slide: PhotoBandSlide, image: string, context: RenderContext): Element {
+  const { tone, emphasisStyle } = slide.options;
+  const palette = palettes[tone];
+  return {
+    type: "div",
+    props: {
+      style: {
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        overflow: "hidden",
+        background: palette.background,
+        color: palette.ink
+      },
+      children: [
+        {
+          type: "img",
+          props: {
+            src: image,
+            width: 1080,
+            height: 820,
+            style: {
+              position: "absolute",
+              left: 0,
+              top: 0,
+              width: 1080,
+              height: 820,
+              objectFit: "fill"
+            }
+          }
+        },
+        {
+          type: "div",
+          props: {
+            style: {
+              position: "absolute",
+              top: 654,
+              right: 68,
+              width: 862,
+              height: 594,
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+              padding: "58px 60px 50px",
+              background: palette.background
+            },
+            children: [
+              paperTexture(),
+              {
+                type: "div",
+                props: {
+                  style: {
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    width: "100%"
+                  },
+                  children: [
+                    headline(slide.content, tone, emphasisStyle, {
+                      width: slide.content.caption ? 500 : 742,
+                      fontSize: 64,
+                      lineHeight: 0.96,
+                      letterSpacing: "-0.035em"
+                    }),
+                    slide.content.caption
+                      ? {
+                          type: "div",
+                          key: "field:content.caption",
+                          props: {
+                            "data-field": "content.caption",
+                            style: {
+                              width: 210,
+                              marginLeft: "auto",
+                              paddingTop: 6,
+                              fontFamily: "Inter",
+                              fontSize: 22,
+                              lineHeight: 1.45,
+                              color: palette.muted,
+                              whiteSpace: "pre-wrap",
+                              wordBreak: "break-word"
+                            },
+                            children: slide.content.caption
+                          }
+                        }
+                      : null
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          type: "div",
+          props: {
+            style: {
+              position: "absolute",
+              left: 68,
+              bottom: 48,
+              display: "flex"
+            },
+            children: folio(context, tone)
+          }
+        }
+      ]
+    }
+  };
+}
+
 const renderers = {
-  type_only: async (slide: TypeOnlySlide) => typeOnly(slide),
+  type_only: async (slide: TypeOnlySlide, context?: RenderContext) => typeOnly(slide, context),
   photo_split: async (slide: PhotoSplitSlide, context: RenderContext) =>
-    photoSplit(slide, await renderSlideImage(slide, context.carouselFile, context.workspace)),
+    photoSplit(
+      slide,
+      await renderSlideImage(slide, context.carouselFile, context.workspace),
+      context
+    ),
   photo_band: async (slide: PhotoBandSlide, context: RenderContext) =>
-    photoBand(slide, await renderSlideImage(slide, context.carouselFile, context.workspace))
-} satisfies Record<LayoutId, (slide: never, context: RenderContext) => Promise<Element>>;
+    photoBand(
+      slide,
+      await renderSlideImage(slide, context.carouselFile, context.workspace),
+      context
+    )
+} satisfies Record<LayoutId, (slide: never, context: never) => Promise<Element>>;
 
 function scopeSvgIds(svg: string, slideId: string): string {
   const ids = [...svg.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]!);
@@ -339,6 +578,19 @@ function scopeSvgIds(svg: string, slideId: string): string {
       .replaceAll(`url(#${id})`, `url(#${replacement})`)
       .replaceAll(`href="#${id}"`, `href="#${replacement}"`);
   }, svg);
+}
+
+function annotateSvg(svg: string, slide: Slide, context?: RenderContext): string {
+  const attributes = [
+    `data-headline-lines="${slide.content.headline.split("\n").length}"`,
+    slide.content.emphasis ? `data-emphasis-style="${slide.options.emphasisStyle}"` : undefined,
+    context?.slideIndex !== undefined && context.slideCount !== undefined
+      ? `data-folio-value="${String(context.slideIndex + 1).padStart(2, "0")} / ${String(
+          context.slideCount
+        ).padStart(2, "0")}"`
+      : undefined
+  ].filter(Boolean).join(" ");
+  return svg.replace("<svg ", `<svg ${attributes} `);
 }
 
 export async function renderSlideSvg(slide: Slide, context?: RenderContext): Promise<string> {
@@ -356,8 +608,10 @@ export async function renderSlideSvg(slide: Slide, context?: RenderContext): Pro
     width: 1080,
     height: 1350,
     fonts: [
-      { name: "Source Serif 4", data: fonts.serif, weight: 700, style: "normal" },
-      { name: "Inter", data: fonts.sans, weight: 400, style: "normal" }
+      { name: "Source Serif 4", data: fonts.serif, weight: 400, style: "normal" },
+      { name: "Source Serif 4", data: fonts.serifItalic, weight: 400, style: "italic" },
+      { name: "Inter", data: fonts.sans, weight: 400, style: "normal" },
+      { name: "Inter", data: fonts.sansSemibold, weight: 600, style: "normal" }
     ],
     onNodeDetected(node) {
       if (typeof node.key === "string" && node.key.startsWith("field:")) {
@@ -366,9 +620,9 @@ export async function renderSlideSvg(slide: Slide, context?: RenderContext): Pro
     }
   });
   const safeBottom = {
-    type_only: 1205,
-    photo_split: 1225,
-    photo_band: 1247
+    type_only: 1200,
+    photo_split: 1128,
+    photo_band: 1168
   } satisfies Record<LayoutId, number>;
   const overflow = fields.find((field) => field.top + field.height > safeBottom[slide.layout] + 0.5);
   if (overflow) {
@@ -379,5 +633,5 @@ export async function renderSlideSvg(slide: Slide, context?: RenderContext): Pro
       `${prefix}.${overflow.field}`
     );
   }
-  return scopeSvgIds(svg, slide.id);
+  return scopeSvgIds(annotateSvg(svg, slide, context), slide.id);
 }

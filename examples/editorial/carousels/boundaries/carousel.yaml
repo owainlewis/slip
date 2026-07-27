@@ -5,20 +5,31 @@ slides:
   - id: upper-left
     layout: photo_split
     content:
-      headline: The focal point can reach the upper-left boundary without exposing empty space
-      body: Cover, zoom, and deterministic clamping keep every requested crop inside the source image.
+      headline: |-
+        A crop can reach
+        the edge.
+      emphasis: edge
+      body: The requested focus stays deliberate, even at the upper-left boundary.
     image:
-      src: ../../assets/portrait.svg
+      src: ../../assets/sea-cliff.jpg
       position: [0, 0]
       zoom: 3
     options:
       side: left
+      tone: paper
+      emphasisStyle: italic
   - id: lower-right
     layout: photo_band
     content:
-      headline: The opposite boundary remains just as predictable
-      caption: Normalized coordinates are inclusive from zero to one.
+      headline: |-
+        And still hold
+        its ground.
+      emphasis: hold
+      caption: The opposite boundary is equally predictable. No gaps. No accidental drift.
     image:
-      src: ../../assets/landscape.svg
+      src: ../../assets/sierra-nevada.jpg
       position: [1, 1]
       zoom: 3
+    options:
+      tone: ink
+      emphasisStyle: mark

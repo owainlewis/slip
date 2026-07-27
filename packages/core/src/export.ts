@@ -72,7 +72,8 @@ export async function renderInstagramSlides(
         await renderSlideSvg(slide, {
           carouselFile,
           workspace,
-          slideIndex: index
+          slideIndex: index,
+          slideCount: carousel.slides.length
         })
       )
     }))

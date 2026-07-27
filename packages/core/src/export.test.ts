@@ -95,8 +95,8 @@ describe("Instagram export", () => {
       })
     ]);
     expect(await Promise.all(slides.map((slide) => pixelHash(slide.png)))).toEqual([
-      "19fcbaf0840a19e21613e2e99657b8fd212c99cdaa83d5417d25bd15fed5ccae",
-      "14ddffd81c82ced56e6450d0244ea033ad3bdc16a01266517b9218771c0541a2"
+      "adce2111469df131cabe8372fbbaef3760489645700d101acef91c6552034c5b",
+      "a892b85b3048e457b43996589982065a21ae889d91099b1f047cb5c1f608deb4"
     ]);
   });
 

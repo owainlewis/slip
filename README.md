@@ -51,20 +51,37 @@ slides:
   - id: cover
     layout: photo_band
     content:
-      headline: Software is becoming disposable
+      headline: |-
+        Software is becoming
+        disposable
+      emphasis: disposable
       caption: The value is moving somewhere else.
     image:
-      src: ../../assets/circuit-board.jpg
+      src: ../../assets/mountain-range.jpg
       position: [0.62, 0.44]
       zoom: 1.2
+    options:
+      tone: paper
+      emphasisStyle: mark
   - id: argument
     layout: type_only
     content:
-      headline: Code is no longer the scarce part
+      headline: |-
+        Code is no longer
+        the scarce part
+      emphasis: scarce
       body: Judgment, context, and distribution are harder to reproduce.
     options:
       align: left
+      tone: ink
+      emphasisStyle: italic
 ```
+
+Literal YAML blocks preserve authored line breaks. `content.emphasis` is an
+optional exact phrase from the headline. Render it with editorial italics or a
+restrained mark using `options.emphasisStyle`. Every layout accepts a `paper`
+or `ink` tone. These additions are optional, so existing schema version 1
+files remain valid.
 
 Discover all available layouts or inspect one layout’s fields, choices, and
 copy limits:
@@ -75,9 +92,10 @@ copy limits:
 "$SLIP_BIN" validate software-is-disposable
 ```
 
-The checked-in `examples/editorial` workspace contains three complete carousels
-covering every layout, alignment, image side, copy shape, and focal-position
-boundary.
+The checked-in `examples/editorial` workspace contains three coherent
+carousels covering every layout, tone, emphasis treatment, alignment, image
+side, copy shape, and focal-position boundary. Its real CC0 photographs have
+checked-in source and license notes in `assets/ATTRIBUTION.md`.
 
 ## Preview
 

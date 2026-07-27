@@ -30,7 +30,11 @@ function documentFor(slug: string, title: string): Carousel {
           headline: title,
           body: "Edit this YAML file and watch the browser preview update."
         },
-        options: { align: "left" }
+        options: {
+          align: "left",
+          tone: "paper",
+          emphasisStyle: "italic"
+        }
       }
     ]
   };
@@ -188,7 +192,12 @@ export async function validateWorkspace(rootPath: string, slug?: string): Promis
   await Promise.all(files.map(async (file) => {
     const carousel = await readCarousel(file, root);
     await Promise.all(carousel.slides.map((slide, slideIndex) =>
-      renderSlideSvg(slide, { carouselFile: file, workspace: root, slideIndex })
+      renderSlideSvg(slide, {
+        carouselFile: file,
+        workspace: root,
+        slideIndex,
+        slideCount: carousel.slides.length
+      })
     ));
   }));
   return files.map((file) => relative(root, file));
