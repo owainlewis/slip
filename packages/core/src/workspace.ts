@@ -3,7 +3,9 @@ import { basename, dirname, join, relative, resolve } from "node:path";
 import { parseDocument, stringify } from "yaml";
 import { carouselJsonSchema, carouselSchema, type Carousel, workspaceConfigSchema } from "./schema.js";
 import { formatIssue, formatYamlPath, SlipError } from "./errors.js";
+import { validateCarouselImages } from "./image.js";
 import { resolveWithinWorkspace } from "./path.js";
+import { renderSlideSvg } from "./renderer.js";
 
 const slugPattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
@@ -123,7 +125,7 @@ export async function createCarousel(rootPath: string, slug: string, title?: str
   return destination;
 }
 
-export async function readCarousel(file: string): Promise<Carousel> {
+export async function readCarousel(file: string, workspacePath?: string): Promise<Carousel> {
   let raw: string;
   try {
     raw = await readFile(file, "utf8");
@@ -146,6 +148,16 @@ export async function readCarousel(file: string): Promise<Carousel> {
       file,
       "$.id"
     );
+  }
+  if (result.data.slides.some((slide) => slide.layout !== "type_only")) {
+    if (!workspacePath) {
+      throw new SlipError(
+        "workspace context is required to validate photographic slides",
+        file,
+        "$.slides"
+      );
+    }
+    await validateCarouselImages(result.data, file, await assertWorkspace(workspacePath));
   }
   return result.data;
 }
@@ -173,6 +185,11 @@ export async function validateWorkspace(rootPath: string, slug?: string): Promis
   const files = slug
     ? [await resolveWithinWorkspace(root, "carousels", slug, "carousel.yaml")]
     : await carouselFiles(root);
-  await Promise.all(files.map(readCarousel));
+  await Promise.all(files.map(async (file) => {
+    const carousel = await readCarousel(file, root);
+    await Promise.all(carousel.slides.map((slide, slideIndex) =>
+      renderSlideSvg(slide, { carouselFile: file, workspace: root, slideIndex })
+    ));
+  }));
   return files.map((file) => relative(root, file));
 }

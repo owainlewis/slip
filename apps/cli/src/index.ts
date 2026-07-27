@@ -5,7 +5,10 @@ import { Command } from "commander";
 import open from "open";
 import {
   createCarousel,
+  describeLayout,
   initialiseWorkspace,
+  layoutDefinitions,
+  listLayouts,
   SlipError,
   validateWorkspace
 } from "@slip/core";
@@ -35,6 +38,24 @@ export function createProgram(): Command {
     .action(async (slug: string, options: { title?: string }) => {
       const file = await createCarousel(process.cwd(), slug, options.title);
       process.stdout.write(`Created ${file}\n`);
+    });
+
+  program
+    .command("layouts")
+    .argument("[layout]")
+    .description("List layouts or document one layout")
+    .action((layout?: string) => {
+      if (!layout) {
+        process.stdout.write(`${listLayouts()}\n`);
+        return;
+      }
+      const description = describeLayout(layout);
+      if (!description) {
+        throw new SlipError(
+          `unknown layout "${layout}"; allowed: ${layoutDefinitions.map((item) => item.id).join(", ")}`
+        );
+      }
+      process.stdout.write(`${description}\n`);
     });
 
   program

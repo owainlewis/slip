@@ -10,6 +10,7 @@
     "@fontsource/inter": "^5.2.6",
     "@fontsource/source-serif-4": "^5.2.6",
     "satori": "^0.18.3",
+    "sharp": "^0.34.5",
     "yaml": "^2.8.0",
     "zod": "^4.0.10"
   }

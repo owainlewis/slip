@@ -7,6 +7,10 @@ const workspace = resolve(".tmp/playwright-workspace");
 await rm(workspace, { recursive: true, force: true });
 await initialiseWorkspace(workspace);
 await writeFile(
+  resolve(workspace, "assets/landscape.svg"),
+  '<svg xmlns="http://www.w3.org/2000/svg" width="5400" height="3600"><rect width="5400" height="3600" fill="#315f45"/></svg>'
+);
+await writeFile(
   resolve(workspace, "carousels/welcome/carousel.yaml"),
   `schemaVersion: 1
 id: welcome
@@ -26,6 +30,15 @@ slides:
       headline: Keep editing in your own tools
     options:
       align: center
+  - id: photograph
+    layout: photo_band
+    content:
+      headline: Local images stay part of the source
+      caption: Change this image and the preview refreshes.
+    image:
+      src: ../../assets/landscape.svg
+      position: [1, 1]
+      zoom: 3
 `
 );
 

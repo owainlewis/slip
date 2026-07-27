@@ -27,6 +27,16 @@ During repository development, commands can run directly from source:
 pnpm exec tsx apps/cli/src/index.ts init /tmp/slip-mvp
 ```
 
+Discover the three registered layout contracts with:
+
+```bash
+pnpm exec tsx apps/cli/src/index.ts layouts
+pnpm exec tsx apps/cli/src/index.ts layouts photo_split
+```
+
+The checked-in `examples/editorial` workspace contains three carousels covering
+every layout, alignment, image side, and focal-position boundary.
+
 ## Verify
 
 ```bash

@@ -1,0 +1,24 @@
+schemaVersion: 1
+id: essential
+title: The essential layouts
+slides:
+  - id: type
+    layout: type_only
+    content:
+      headline: One clear thought
+    options:
+      align: left
+  - id: split
+    layout: photo_split
+    content:
+      headline: Image and argument
+    image:
+      src: ../../assets/portrait.svg
+    options:
+      side: left
+  - id: band
+    layout: photo_band
+    content:
+      headline: A strong opening frame
+    image:
+      src: ../../assets/landscape.svg

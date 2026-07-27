@@ -1,6 +1,6 @@
 import { mkdtemp, mkdir, readFile, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { carouselJsonSchema } from "./schema.js";
 import { createCarousel, initialiseWorkspace, readCarousel, validateWorkspace } from "./workspace.js";
@@ -20,6 +20,14 @@ afterEach(async () => {
 });
 
 describe("workspace", () => {
+  it("keeps the three-carousel visual review corpus valid", async () => {
+    await expect(validateWorkspace(resolve("examples/editorial"))).resolves.toEqual([
+      "carousels/boundaries/carousel.yaml",
+      "carousels/essential/carousel.yaml",
+      "carousels/opposite-sides/carousel.yaml"
+    ]);
+  });
+
   it("initialises the required files with a valid type_only example", async () => {
     const directory = await temporaryDirectory();
     await initialiseWorkspace(directory);

@@ -1,4 +1,6 @@
 export * from "./errors.js";
+export * from "./image.js";
+export * from "./layouts.js";
 export * from "./path.js";
 export * from "./renderer.js";
 export * from "./schema.js";

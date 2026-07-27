@@ -14,6 +14,7 @@ export default defineConfig({
     "hono",
     "lightningcss",
     "open",
+    "sharp",
     "satori",
     "vite",
     "yaml",
