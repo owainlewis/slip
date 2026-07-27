@@ -111,6 +111,11 @@ Exports validate the complete carousel before replacing the destination.
 
 ## Verify
 
+The PDF raster comparison requires Poppler’s `pdftoppm` executable on `PATH`.
+Install it with `brew install poppler` on macOS,
+`sudo apt-get install poppler-utils` on Ubuntu, or
+`choco install poppler` on Windows.
+
 ```bash
 pnpm install --frozen-lockfile
 pnpm lint
