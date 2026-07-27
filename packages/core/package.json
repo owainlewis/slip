@@ -9,6 +9,8 @@
   "dependencies": {
     "@fontsource/inter": "^5.2.6",
     "@fontsource/source-serif-4": "^5.2.6",
+    "@resvg/resvg-js": "^2.6.2",
+    "jszip": "^3.10.1",
     "satori": "^0.18.3",
     "sharp": "^0.34.5",
     "yaml": "^2.8.0",

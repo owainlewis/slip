@@ -1,6 +1,8 @@
 import { expect, test } from "@playwright/test";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import JSZip from "jszip";
+import sharp from "sharp";
 
 const carouselFile = resolve(".tmp/playwright-workspace/carousels/welcome/carousel.yaml");
 const imageFile = resolve(".tmp/playwright-workspace/assets/landscape.svg");
@@ -95,4 +97,32 @@ test("rejects Vite filesystem requests outside the web application", async ({ re
   const response = await request.get(`/@fs/${repositoryFile}`);
   expect(response.status()).toBeGreaterThanOrEqual(400);
   await expect(response.text()).resolves.not.toContain('"name": "slip"');
+});
+
+test("downloads the same ordered Instagram PNGs as a ZIP", async ({ page }) => {
+  await page.goto("/?carousel=welcome");
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.getByRole("link", { name: "Download Instagram PNGs" }).click()
+  ]);
+  expect(download.suggestedFilename()).toBe("welcome-instagram.zip");
+  const stream = await download.createReadStream();
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream) chunks.push(Buffer.from(chunk));
+
+  const zip = await JSZip.loadAsync(Buffer.concat(chunks));
+  expect(Object.keys(zip.files)).toEqual([
+    "01-cover.png",
+    "02-close.png",
+    "03-photograph.png"
+  ]);
+  for (const filename of Object.keys(zip.files)) {
+    const png = await zip.file(filename)!.async("nodebuffer");
+    expect(await sharp(png).metadata()).toEqual(expect.objectContaining({
+      format: "png",
+      width: 1080,
+      height: 1350,
+      space: "srgb"
+    }));
+  }
 });
