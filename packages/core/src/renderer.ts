@@ -139,7 +139,11 @@ function paperTexture(): Element {
   };
 }
 
-function folio(context: RenderContext | undefined, tone: Tone): Element | null {
+function folio(
+  context: RenderContext | undefined,
+  tone: Tone,
+  backed = false
+): Element | null {
   if (context?.slideIndex === undefined || context.slideCount === undefined) return null;
   const palette = palettes[tone];
   const value = `${String(context.slideIndex + 1).padStart(2, "0")} / ${String(
@@ -156,7 +160,13 @@ function folio(context: RenderContext | undefined, tone: Tone): Element | null {
         fontSize: 18,
         fontWeight: 600,
         letterSpacing: "0.12em",
-        color: palette.muted
+        color: backed ? palette.ink : palette.muted,
+        ...(backed
+          ? {
+              background: palette.background,
+              padding: "8px 12px"
+            }
+          : {})
       },
       children: value
     }
@@ -607,7 +617,7 @@ function photoSplit(slide: PhotoSplitSlide, image: string, context: RenderContex
               display: "flex",
               justifyContent: "center"
             },
-            children: folio(context, tone)
+            children: folio(context, tone, true)
           }
         }
       ]
@@ -731,7 +741,7 @@ function photoBand(slide: PhotoBandSlide, image: string, context: RenderContext)
               display: "flex",
               justifyContent: "center"
             },
-            children: folio(context, tone)
+            children: folio(context, tone, true)
           }
         }
       ]

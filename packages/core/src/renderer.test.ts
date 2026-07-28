@@ -37,7 +37,13 @@ async function expectFullBleedGeometry(
   expectedFirst: [number, number, number],
   expectedSecond: [number, number, number]
 ): Promise<{ pixels: Buffer; channels: number }> {
-  const svg = await renderSlideSvg(slide, { carouselFile, workspace });
+  const svg = await renderSlideSvg(slide, {
+    carouselFile,
+    workspace,
+    slideIndex: 0,
+    slideCount: 2
+  });
+  expect(svg).toContain('data-folio-value="01 / 02"');
   const decoded = await raster(svg);
   expect(pixel(decoded, ...firstPoint)).toEqual(expectedFirst);
   expect(pixel(decoded, ...secondPoint)).toEqual(expectedSecond);
@@ -208,8 +214,8 @@ describe("layout pixel regression", () => {
       [14, 30, 45],
       [14, 30, 45]
     );
-    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"b02342147c4813205aeaa2d549931a460ed42efc84a7e128df08796b67bee37e"`);
-    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"447ab232b1ca9f584c8cb55ffc753635d999dfa5fe44426d28c1a2bea2807e0c"`);
+    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"5cdb19aa6852941ac0dd7ca15d38fce1ed5ca4c9f4c7d063e745fa54abcfe393"`);
+    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"7a1b080bb0c1028d421c982e7d2874f5da3a0a788bbd00cf9b849c74d5caaa04"`);
   });
 
   it("composes photo_band as centered full-bleed photography at copy and focal limits", async () => {
@@ -231,7 +237,7 @@ describe("layout pixel regression", () => {
       image: { src: "../../assets/landscape.svg", position: [1, 1], zoom: 3 },
       options: { tone: "ink", emphasisStyle: "mark" }
     }, [900, 100], [950, 1150], [20, 38, 28], [20, 38, 28]);
-    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"d5935f9d344009986a315b96a7d08265cdc93a3b14224a1d3c1e78e66ed9cbc9"`);
-    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"e12adc22a11f2268c1466f603fe554c8489e9ebd363bddccef32178068a2eeba"`);
+    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"a7c4f4752824bbc5b26262f06efd992decbe1e58410bb303096fd0b6ed7ed699"`);
+    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"6ce0f8e3cb017d52f0847a30df3913aeb76e2ba40ce55c552c2bbf0594a73cf3"`);
   });
 });
