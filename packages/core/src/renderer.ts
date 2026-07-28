@@ -308,18 +308,23 @@ function shapedHeadlineLine(
       ? maxWidth - width
       : 0;
   const children: Element[] = [];
+  let pathMinX = 0;
+  let pathMaxX = maxWidth;
 
   shaped.forEach((segment, segmentIndex) => {
     let glyphX = segmentX;
     segment.run.glyphs.forEach((glyph, glyphIndex) => {
       const position = segment.run.positions[glyphIndex]!;
+      const originX = glyphX + position.xOffset * scale;
+      pathMinX = Math.min(pathMinX, originX + glyph.bbox.minX * scale);
+      pathMaxX = Math.max(pathMaxX, originX + glyph.bbox.maxX * scale);
       children.push({
         type: "path",
         key: `headline-${lineIndex}-${segmentIndex}-${glyphIndex}`,
         props: {
           d: glyph.path.toSVG(),
           fill,
-          transform: `translate(${glyphX + position.xOffset * scale} ${baseline - position.yOffset * scale}) scale(${scale} ${-scale})`
+          transform: `translate(${originX} ${baseline - position.yOffset * scale}) scale(${scale} ${-scale})`
         }
       });
       glyphX += position.xAdvance * scale;
@@ -340,6 +345,9 @@ function shapedHeadlineLine(
     }
     segmentX += segment.run.advanceWidth * scale;
   });
+  const viewportLeft = Math.min(0, pathMinX);
+  const viewportRight = Math.max(maxWidth, pathMaxX);
+  const viewportWidth = viewportRight - viewportLeft;
 
   return {
     type: "div",
@@ -356,15 +364,15 @@ function shapedHeadlineLine(
       children: {
         type: "svg",
         props: {
-          width: maxWidth,
+          width: viewportWidth,
           height: viewportHeight,
-          viewBox: `0 0 ${maxWidth} ${viewportHeight}`,
+          viewBox: `${viewportLeft} 0 ${viewportWidth} ${viewportHeight}`,
           style: {
             position: "absolute",
             top,
-            left: 0,
+            left: viewportLeft,
             display: "block",
-            width: maxWidth,
+            width: viewportWidth,
             height: viewportHeight
           },
           children

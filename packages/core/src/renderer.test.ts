@@ -130,6 +130,31 @@ describe("layout pixel regression", () => {
     expect(pixelHash(await raster(svg))).toMatchInlineSnapshot(`"520d8b4ba17d61871c67db81751120e81c369d1debf983db50e079303b7521c7"`);
   });
 
+  it("preserves italic glyph overhangs at both horizontal line edges", async () => {
+    const left = await renderSlideSvg({
+      id: "left-overhang",
+      layout: "type_only",
+      content: { headline: "fine", emphasis: "f" },
+      options: { align: "left", tone: "paper", emphasisStyle: "italic" }
+    });
+    const right = await renderSlideSvg({
+      id: "right-overhang",
+      layout: "photo_split",
+      content: { headline: "proof", emphasis: "f" },
+      image: { src: "../../assets/landscape.svg", position: [0.5, 0.5], zoom: 1 },
+      options: { side: "left", tone: "ink", emphasisStyle: "italic" }
+    }, { carouselFile, workspace });
+    expect([
+      pixelHash(await raster(left)),
+      pixelHash(await raster(right))
+    ]).toMatchInlineSnapshot(`
+      [
+        "26684c14fd3217095202300d40b96e594bb81032365d1c21a7adf386e0098677",
+        "9f2b488a7eeba8ae75f570c9ffdeccece9f2a6e50a3fa8156de80bf7856f7302",
+      ]
+    `);
+  });
+
   it("wraps long tokens and reports field-specific overflow before returning a clipped slide", async () => {
     await expect(renderSlideSvg({
       id: "caption-wrap",
