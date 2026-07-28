@@ -543,7 +543,7 @@ function photoSplit(slide: PhotoSplitSlide, image: string): Element {
   const alignRight = side === "left";
   const overlay = tone === "ink"
     ? {
-        background: "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.66) 42%, rgba(0,0,0,0.72) 76%, rgba(0,0,0,0.48) 100%)"
+        background: "linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.66) 42%, rgba(0,0,0,0.72) 76%, rgba(0,0,0,0.6) 100%)"
       }
     : { background: palette.background, opacity: 0.78 };
   return {
@@ -656,7 +656,7 @@ function photoBand(slide: PhotoBandSlide, image: string): Element {
   const palette = palettes[tone];
   const overlay = tone === "ink"
     ? {
-        background: "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.66) 42%, rgba(0,0,0,0.72) 76%, rgba(0,0,0,0.48) 100%)"
+        background: "linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.66) 42%, rgba(0,0,0,0.72) 76%, rgba(0,0,0,0.6) 100%)"
       }
     : { background: palette.background, opacity: 0.78 };
   return {

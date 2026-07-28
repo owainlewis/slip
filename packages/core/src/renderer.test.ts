@@ -210,11 +210,11 @@ describe("layout pixel regression", () => {
       maximumSlide,
       [900, 100],
       [100, 100],
-      [26, 54, 81],
-      [26, 54, 81]
+      [14, 29, 43],
+      [14, 29, 43]
     );
     expect(pixelHash(minimum)).toMatchInlineSnapshot(`"cecf3571024a753e82a882054c8ced664840a80ead54646ce7ec0559b02675ab"`);
-    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"adbf13475acdc59f55fcaa215931b0a3a420ba337ac67cd0680793db7ec6dad4"`);
+    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"6e84bebebabfa7253ee1ea53ae739fa3c16b47e31abf29bf3dae55e1d4e28afa"`);
   });
 
   it("composes photo_band as centered full-bleed photography at copy and focal limits", async () => {
@@ -235,8 +235,8 @@ describe("layout pixel regression", () => {
       },
       image: { src: "../../assets/landscape.svg", position: [1, 1], zoom: 3 },
       options: { tone: "ink", emphasisStyle: "mark" }
-    }, [900, 100], [950, 1150], [35, 69, 50], [18, 36, 26]);
+    }, [900, 100], [950, 1150], [19, 37, 27], [16, 31, 23]);
     expect(pixelHash(minimum)).toMatchInlineSnapshot(`"c8d280dadd475ed04da29a31b9fe632ac5e6cb18b2065f875036bbeb4e9562da"`);
-    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"935c4286128dde573849789fd00cb039d9ed50e1f05d575edb3e35d6920746e2"`);
+    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"bb6564bba131caf9dbcf80936be8f803bb83941e6e7a85a455c78800b7637249"`);
   });
 });
