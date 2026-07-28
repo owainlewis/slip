@@ -17,6 +17,7 @@
     "@slip/server": "workspace:*",
     "chokidar": "^4.0.3",
     "commander": "^14.0.0",
+    "fontkit": "^2.0.4",
     "hono": "^4.8.10",
     "jszip": "^3.10.1",
     "open": "^10.2.0",

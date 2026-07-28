@@ -23,11 +23,6 @@ export const imageRegions = {
   photo_band: { width: 1080, height: 1350 }
 } as const satisfies Record<PhotoSlide["layout"], ImageRegion>;
 
-const imageValidationRegions = {
-  photo_split: { width: 540, height: 1350 },
-  photo_band: { width: 1080, height: 820 }
-} as const satisfies Record<PhotoSlide["layout"], ImageRegion>;
-
 export function calculateImageCrop(
   source: ImageRegion,
   destination: ImageRegion,
@@ -64,7 +59,7 @@ function assertSlideImageSufficient(
   carouselFile: string,
   yamlPath?: string
 ): void {
-  const region = imageValidationRegions[slide.layout];
+  const region = imageRegions[slide.layout];
   const crop = calculateImageCrop(source, region, slide.image.position, slide.image.zoom);
   assertSufficientPixels(source, region, crop, carouselFile, yamlPath);
 }

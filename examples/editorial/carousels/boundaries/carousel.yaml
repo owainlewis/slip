@@ -29,7 +29,7 @@ slides:
     image:
       src: ../../assets/sierra-nevada.jpg
       position: [1, 1]
-      zoom: 3
+      zoom: 1.5
     options:
       tone: ink
       emphasisStyle: mark

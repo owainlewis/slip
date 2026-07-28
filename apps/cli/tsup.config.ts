@@ -12,6 +12,7 @@ export default defineConfig({
     "@resvg/resvg-js",
     "chokidar",
     "commander",
+    "fontkit",
     "hono",
     "jszip",
     "lightningcss",

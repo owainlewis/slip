@@ -50,16 +50,16 @@ beforeAll(async () => {
   carouselFile = join(workspace, "carousels", "welcome", "carousel.yaml");
   await writeFile(
     join(workspace, "assets", "portrait.svg"),
-    `<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="5400">
-      <rect width="2400" height="2700" fill="#b33b2e"/>
-      <rect y="2700" width="2400" height="2700" fill="#244b70"/>
+    `<svg xmlns="http://www.w3.org/2000/svg" width="3600" height="8100">
+      <rect width="3600" height="4050" fill="#b33b2e"/>
+      <rect y="4050" width="3600" height="4050" fill="#244b70"/>
     </svg>`
   );
   await writeFile(
     join(workspace, "assets", "landscape.svg"),
-    `<svg xmlns="http://www.w3.org/2000/svg" width="5400" height="3600">
-      <rect width="2700" height="3600" fill="#c28b2c"/>
-      <rect x="2700" width="2700" height="3600" fill="#315f45"/>
+    `<svg xmlns="http://www.w3.org/2000/svg" width="6750" height="4500">
+      <rect width="3375" height="4500" fill="#c28b2c"/>
+      <rect x="3375" width="3375" height="4500" fill="#315f45"/>
     </svg>`
   );
 });
@@ -85,9 +85,10 @@ describe("layout pixel regression", () => {
     const second = await renderSlideSvg(slide, context);
     expect(first).toBe(second);
     expect(first).toContain('data-headline-lines="2"');
+    expect(first).toContain('data-text-shaping="fontkit"');
     expect(first).toContain('data-emphasis-style="mark"');
     expect(first).toContain('data-folio-value="02 / 03"');
-    expect(pixelHash(await raster(first))).toMatchInlineSnapshot(`"4252129f178d3b64e41e0a07095d1c347008958529b66d7e6707e3688e5578ed"`);
+    expect(pixelHash(await raster(first))).toMatchInlineSnapshot(`"8843e6a39053ba24fc2c9455707bb2fd6a78f9420f562ca905bdf7f21083e3a2"`);
   });
 
   it("scopes generated SVG resource IDs to each slide", async () => {
@@ -109,6 +110,19 @@ describe("layout pixel regression", () => {
     expect(firstIds.every((id) => id.startsWith("slip-first-"))).toBe(true);
     expect(secondIds.every((id) => id.startsWith("slip-second-"))).toBe(true);
     expect(firstIds.some((id) => secondIds.includes(id))).toBe(false);
+  });
+
+  it("keeps emphasis aligned when astral characters precede it", async () => {
+    const svg = await renderSlideSvg({
+      id: "unicode-emphasis",
+      layout: "type_only",
+      content: {
+        headline: "👋 Context",
+        emphasis: "Context"
+      },
+      options: { align: "center", tone: "paper", emphasisStyle: "italic" }
+    });
+    expect(pixelHash(await raster(svg))).toMatchInlineSnapshot(`"a897462ec938dfacdcd456cbaa4cbb184fbee0dac78c6adc06aceef26e79baa3"`);
   });
 
   it("wraps long tokens and reports field-specific overflow before returning a clipped slide", async () => {
@@ -153,8 +167,8 @@ describe("layout pixel regression", () => {
     expect(pixel(minimum, 0, 0)).toEqual([242, 240, 234]);
     expect(pixel(maximum, 1079, 1349)).toEqual([13, 13, 12]);
     expect(minimum.pixels.equals(maximum.pixels)).toBe(false);
-    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"23839df59d0b33f9f04568a93f731873cc64c5a19a7c6d989cd1d2bac8fd9b26"`);
-    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"6b03e2f378e910b077ea35403c56f1d1c80486b50f2cf7d5fd2f94e8f0618a44"`);
+    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"23fdf0b5a6714c1f7afc838184eb8dd78f47ecbd5fb7eb4279a7509232f2af79"`);
+    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"848de4c820faefb38d69ec1755d91ff1ee70ab3c69a5800482088e4b18c1bec6"`);
   });
 
   it("composes photo_split as full-bleed editorial photography for both sides and copy limits", async () => {
@@ -191,11 +205,11 @@ describe("layout pixel regression", () => {
       maximumSlide,
       [900, 100],
       [100, 100],
-      [27, 56, 84],
-      [27, 56, 84]
+      [14, 30, 45],
+      [14, 30, 45]
     );
-    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"4d275ab58461b8c72c84f8187261172be040e7762f40107fef88b623b285fbb8"`);
-    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"485f9e5e3827d4361e6b3688be9ee69ede8f6fcf9dc4ad9f1c1a83ec0931ca9e"`);
+    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"b02342147c4813205aeaa2d549931a460ed42efc84a7e128df08796b67bee37e"`);
+    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"447ab232b1ca9f584c8cb55ffc753635d999dfa5fe44426d28c1a2bea2807e0c"`);
   });
 
   it("composes photo_band as centered full-bleed photography at copy and focal limits", async () => {
@@ -216,8 +230,8 @@ describe("layout pixel regression", () => {
       },
       image: { src: "../../assets/landscape.svg", position: [1, 1], zoom: 3 },
       options: { tone: "ink", emphasisStyle: "mark" }
-    }, [900, 100], [950, 1150], [33, 65, 47], [33, 65, 47]);
-    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"ca105df85ef26f46eb6e9990758650c7f3accb1f9a903c7e918cb45130464e61"`);
-    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"f55a056cabbfe916b8f59c6825d5aa672b1b3be79b4acbc442f910a2e8b189d0"`);
+    }, [900, 100], [950, 1150], [20, 38, 28], [20, 38, 28]);
+    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"d5935f9d344009986a315b96a7d08265cdc93a3b14224a1d3c1e78e66ed9cbc9"`);
+    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"e12adc22a11f2268c1466f603fe554c8489e9ebd363bddccef32178068a2eeba"`);
   });
 });

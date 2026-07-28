@@ -164,7 +164,8 @@ The single editorial system uses:
 
 - 1080 × 1350 pixel canvas;
 - warm paper, near-black ink, and quiet supporting tones without decorative colour;
-- bundled Bodoni Moda regular and italic display faces with Inter for supporting copy;
+- bundled Bodoni Moda regular and italic display faces, shaped with kerning and
+  ligatures, with Inter for supporting copy;
 - authored headline line breaks and explicit phrase emphasis;
 - centered typographic compositions, full-bleed crops, and purposeful whitespace;
 - fixed, deterministic paper texture shared by preview, PNG, and PDF rendering;
@@ -206,8 +207,13 @@ preview visible and displays an actionable error.
 
 ### Rendering and export
 
-Layout components render to SVG with bundled fonts. The same SVG is shown in
-the browser and passed through Resvg for PNG export.
+Layout components render to SVG with bundled fonts. Fontkit shapes display
+headlines into positioned glyph paths so preview and export preserve kerning,
+ligatures, and italic alternates. Satori lays out the complete composition. The
+same SVG is shown in the browser and passed through Resvg for PNG export.
+
+Photographic layouts are full bleed, so image sufficiency is checked against
+the complete 1080 × 1350 output region after cover crop and zoom.
 
 Instagram export writes numbered files such as `01-cover.png` at exactly
 1080 × 1350 pixels. Browser download packages them into a ZIP. CLI export
@@ -229,7 +235,8 @@ not file bytes or metadata.
 - Zod for runtime schemas and JSON Schema generation
 - YAML for documents
 - Chokidar for file watching
-- Satori and Resvg for SVG and PNG rendering
+- Fontkit for display-font shaping
+- Satori and Resvg for SVG layout and PNG rendering
 - PDF-lib and JSZip for export packaging
 - Sharp for image inspection
 - Vitest for unit and contract tests
@@ -268,8 +275,8 @@ one pnpm workspace.
 
 ## Risks
 
-- **Satori typography is insufficient:** prove font loading, wrapping, and all
-  three layouts in the first vertical slice before adding features.
+- **Typography loses editorial detail:** shape display headlines with Fontkit,
+  then pixel-test wrapping, emphasis, and all three layouts.
 - **YAML is difficult to discover:** generate JSON Schema, examples, and layout
   help from the same contracts.
 - **Layouts become one-offs:** add a layout only when the review corpus exposes
