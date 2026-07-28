@@ -165,15 +165,17 @@ The single editorial system uses:
 - 1080 × 1350 pixel canvas;
 - warm paper, near-black ink, and quiet supporting tones without decorative colour;
 - bundled Bodoni Moda regular and italic display faces, shaped with kerning and
-  ligatures, with Inter for supporting copy;
+  ligatures, with Instrument Sans for supporting copy;
 - authored headline line breaks and explicit phrase emphasis;
-- centered typographic compositions, full-bleed crops, and purposeful whitespace;
+- optically staged typographic compositions, full-bleed crops, and purposeful whitespace;
 - fixed, deterministic paper texture shared by preview, PNG, and PDF rendering;
-- quiet context-driven folios such as `01 / 05`;
+- quiet context-driven folios such as `01 / 05` on typographic slides;
 - square corners and no repeated brand footer.
 
-The system excludes gradients, glass effects, decorative blobs, icon grids,
-excessive cards, automatic word highlighting, and user-authored CSS.
+The system excludes decorative gradients, glass effects, decorative blobs,
+icon grids, excessive cards, automatic word highlighting, and user-authored
+CSS. Photographic layouts may use a restrained tonal gradient solely to keep
+copy readable while retaining image depth.
 
 ### CLI
 

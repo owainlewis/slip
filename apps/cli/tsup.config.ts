@@ -7,7 +7,7 @@ export default defineConfig({
   clean: true,
   external: [
     "@fontsource/bodoni-moda",
-    "@fontsource/inter",
+    "@fontsource/instrument-sans",
     "@hono/node-server",
     "@resvg/resvg-js",
     "chokidar",

@@ -43,7 +43,6 @@ async function expectFullBleedGeometry(
     slideIndex: 0,
     slideCount: 2
   });
-  expect(svg).toContain('data-folio-value="01 / 02"');
   const decoded = await raster(svg);
   expect(pixel(decoded, ...firstPoint)).toEqual(expectedFirst);
   expect(pixel(decoded, ...secondPoint)).toEqual(expectedSecond);
@@ -94,7 +93,7 @@ describe("layout pixel regression", () => {
     expect(first).toContain('data-text-shaping="fontkit"');
     expect(first).toContain('data-emphasis-style="mark"');
     expect(first).toContain('data-folio-value="02 / 03"');
-    expect(pixelHash(await raster(first))).toMatchInlineSnapshot(`"8843e6a39053ba24fc2c9455707bb2fd6a78f9420f562ca905bdf7f21083e3a2"`);
+    expect(pixelHash(await raster(first))).toMatchInlineSnapshot(`"a126d3ecc7db6c0c78797cc7db55e836e8be7a99ace91a883bbc6c0a94a8ca43"`);
   });
 
   it("scopes generated SVG resource IDs to each slide", async () => {
@@ -128,7 +127,7 @@ describe("layout pixel regression", () => {
       },
       options: { align: "center", tone: "paper", emphasisStyle: "italic" }
     });
-    expect(pixelHash(await raster(svg))).toMatchInlineSnapshot(`"a897462ec938dfacdcd456cbaa4cbb184fbee0dac78c6adc06aceef26e79baa3"`);
+    expect(pixelHash(await raster(svg))).toMatchInlineSnapshot(`"20626ccab3dfa7478151d2198d08ef3962193728a8678ff859d89d9d170b5aa3"`);
   });
 
   it("wraps long tokens and reports field-specific overflow before returning a clipped slide", async () => {
@@ -173,8 +172,8 @@ describe("layout pixel regression", () => {
     expect(pixel(minimum, 0, 0)).toEqual([242, 240, 234]);
     expect(pixel(maximum, 1079, 1349)).toEqual([13, 13, 12]);
     expect(minimum.pixels.equals(maximum.pixels)).toBe(false);
-    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"23fdf0b5a6714c1f7afc838184eb8dd78f47ecbd5fb7eb4279a7509232f2af79"`);
-    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"848de4c820faefb38d69ec1755d91ff1ee70ab3c69a5800482088e4b18c1bec6"`);
+    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"460a072ea2cf7899a4d5992a30b999a33ea94fef3cd8eb5ec4cf0e07a62eba94"`);
+    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"e65f04a78923184fd9169683babc0722f59bce69e4f5385c33274e9f96e66eea"`);
   });
 
   it("composes photo_split as full-bleed editorial photography for both sides and copy limits", async () => {
@@ -211,11 +210,11 @@ describe("layout pixel regression", () => {
       maximumSlide,
       [900, 100],
       [100, 100],
-      [14, 30, 45],
-      [14, 30, 45]
+      [26, 54, 81],
+      [26, 54, 81]
     );
-    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"5cdb19aa6852941ac0dd7ca15d38fce1ed5ca4c9f4c7d063e745fa54abcfe393"`);
-    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"7a1b080bb0c1028d421c982e7d2874f5da3a0a788bbd00cf9b849c74d5caaa04"`);
+    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"9c3e993cd9823bfe787e80b4d17fff525e1776f4d7de61da23d964d198be4c3c"`);
+    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"ada63c12303189a91a54be19a60e5171d8cf089b3f5cb94213808e1ec78315df"`);
   });
 
   it("composes photo_band as centered full-bleed photography at copy and focal limits", async () => {
@@ -236,8 +235,8 @@ describe("layout pixel regression", () => {
       },
       image: { src: "../../assets/landscape.svg", position: [1, 1], zoom: 3 },
       options: { tone: "ink", emphasisStyle: "mark" }
-    }, [900, 100], [950, 1150], [20, 38, 28], [20, 38, 28]);
-    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"a7c4f4752824bbc5b26262f06efd992decbe1e58410bb303096fd0b6ed7ed699"`);
-    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"6ce0f8e3cb017d52f0847a30df3913aeb76e2ba40ce55c552c2bbf0594a73cf3"`);
+    }, [900, 100], [950, 1150], [35, 69, 50], [18, 36, 26]);
+    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"636a407248a6e118352a01c88ae3569697c6dff3ac3f38edc89323585d5f7079"`);
+    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"899bd4640c5fb2f3a55cbbac2d7bcedaa86ad207246c00e4e53a77015e005383"`);
   });
 });

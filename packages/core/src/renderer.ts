@@ -17,7 +17,7 @@ type LoadedFonts = {
   serif: ArrayBuffer;
   serifItalic: ArrayBuffer;
   sans: ArrayBuffer;
-  sansSemibold: ArrayBuffer;
+  sansMedium: ArrayBuffer;
 };
 
 let fontsPromise: Promise<LoadedFonts> | undefined;
@@ -66,9 +66,9 @@ async function loadFonts() {
   fontsPromise ??= Promise.all([
     readFile(require.resolve("@fontsource/bodoni-moda/files/bodoni-moda-latin-400-normal.woff")),
     readFile(require.resolve("@fontsource/bodoni-moda/files/bodoni-moda-latin-400-italic.woff")),
-    readFile(require.resolve("@fontsource/inter/files/inter-latin-400-normal.woff")),
-    readFile(require.resolve("@fontsource/inter/files/inter-latin-600-normal.woff"))
-  ]).then(([serif, serifItalic, sans, sansSemibold]) => {
+    readFile(require.resolve("@fontsource/instrument-sans/files/instrument-sans-latin-400-normal.woff")),
+    readFile(require.resolve("@fontsource/instrument-sans/files/instrument-sans-latin-500-normal.woff"))
+  ]).then(([serif, serifItalic, sans, sansMedium]) => {
     displayFaces = {
       normal: create(serif) as Font,
       italic: create(serifItalic) as Font
@@ -80,9 +80,9 @@ async function loadFonts() {
         serifItalic.byteOffset + serifItalic.byteLength
       ),
       sans: sans.buffer.slice(sans.byteOffset, sans.byteOffset + sans.byteLength),
-      sansSemibold: sansSemibold.buffer.slice(
-        sansSemibold.byteOffset,
-        sansSemibold.byteOffset + sansSemibold.byteLength
+      sansMedium: sansMedium.buffer.slice(
+        sansMedium.byteOffset,
+        sansMedium.byteOffset + sansMedium.byteLength
       )
     };
   });
@@ -139,11 +139,7 @@ function paperTexture(): Element {
   };
 }
 
-function folio(
-  context: RenderContext | undefined,
-  tone: Tone,
-  backed = false
-): Element | null {
+function folio(context: RenderContext | undefined, tone: Tone): Element | null {
   if (context?.slideIndex === undefined || context.slideCount === undefined) return null;
   const palette = palettes[tone];
   const value = `${String(context.slideIndex + 1).padStart(2, "0")} / ${String(
@@ -156,17 +152,11 @@ function folio(
       "data-folio": true,
       "data-folio-value": value,
       style: {
-        fontFamily: "Inter",
+        fontFamily: "Instrument Sans",
         fontSize: 18,
-        fontWeight: 600,
+        fontWeight: 500,
         letterSpacing: "0.12em",
-        color: backed ? palette.ink : palette.muted,
-        ...(backed
-          ? {
-              background: palette.background,
-              padding: "8px 12px"
-            }
-          : {})
+        color: palette.muted
       },
       children: value
     }
@@ -413,13 +403,44 @@ function typeOnly(slide: TypeOnlySlide, context?: RenderContext): Element {
         justifyContent: "center",
         alignItems: centered ? "center" : "flex-start",
         overflow: "hidden",
-        padding: centered ? "150px 92px 164px" : "146px 96px 164px",
+        padding: centered ? "132px 72px 154px" : "132px 84px 154px",
         background: palette.background,
         color: palette.ink,
         textAlign: centered ? "center" : "left"
       },
       children: [
         paperTexture(),
+        slide.content.eyebrow
+          ? {
+              type: "div",
+              key: "field:content.eyebrow",
+              props: {
+                "data-field": "content.eyebrow",
+                style: {
+                  position: "absolute",
+                  top: 94,
+                  ...(centered
+                    ? {
+                        left: 0,
+                        width: 1080,
+                        display: "flex",
+                        justifyContent: "center"
+                      }
+                    : { left: 84 }),
+                  fontFamily: "Instrument Sans",
+                  fontSize: 15,
+                  fontWeight: 500,
+                  lineHeight: 1.2,
+                  letterSpacing: "0.28em",
+                  color: palette.muted,
+                  textAlign: centered ? "center" : "left",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word"
+                },
+                children: slide.content.eyebrow.toUpperCase()
+              }
+            }
+          : null,
         {
           type: "div",
           props: {
@@ -429,34 +450,14 @@ function typeOnly(slide: TypeOnlySlide, context?: RenderContext): Element {
               flexDirection: "column",
               alignItems: centered ? "center" : "flex-start",
               width: "100%",
-              maxWidth: centered ? 884 : 860
+              maxWidth: centered ? 936 : 900,
+              transform: "translateY(-18px)"
             },
             children: [
-              slide.content.eyebrow
-                ? {
-                    type: "div",
-                    key: "field:content.eyebrow",
-                    props: {
-                      "data-field": "content.eyebrow",
-                      style: {
-                        fontFamily: "Inter",
-                        fontSize: 17,
-                        fontWeight: 400,
-                        lineHeight: 1.2,
-                        letterSpacing: "0.24em",
-                        color: palette.muted,
-                        marginBottom: 64,
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-word"
-                      },
-                      children: slide.content.eyebrow.toUpperCase()
-                    }
-                  }
-                : null,
               headline(slide.content, tone, emphasisStyle, {
-                fontSize: centered ? 96 : 94,
-                lineHeight: 0.92,
-                maxWidth: centered ? 884 : 860,
+                fontSize: centered ? 106 : 102,
+                lineHeight: 0.86,
+                maxWidth: centered ? 936 : 900,
                 textAlign: centered ? "center" : "left"
               }),
               slide.content.body
@@ -466,11 +467,11 @@ function typeOnly(slide: TypeOnlySlide, context?: RenderContext): Element {
                     props: {
                       "data-field": "content.body",
                       style: {
-                        fontFamily: "Inter",
-                        fontSize: 29,
-                        lineHeight: 1.45,
-                        maxWidth: centered ? 780 : 700,
-                        marginTop: 58,
+                        fontFamily: "Instrument Sans",
+                        fontSize: 25,
+                        lineHeight: 1.36,
+                        maxWidth: centered ? 720 : 660,
+                        marginTop: 48,
                         color: palette.muted,
                         whiteSpace: "pre-wrap",
                         wordBreak: "break-word"
@@ -500,12 +501,14 @@ function typeOnly(slide: TypeOnlySlide, context?: RenderContext): Element {
   };
 }
 
-function photoSplit(slide: PhotoSplitSlide, image: string, context: RenderContext): Element {
+function photoSplit(slide: PhotoSplitSlide, image: string): Element {
   const { side, tone, emphasisStyle } = slide.options;
   const palette = palettes[tone];
   const alignRight = side === "left";
   const overlay = tone === "ink"
-    ? { background: "#000000", opacity: 0.6 }
+    ? {
+        background: "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.66) 42%, rgba(0,0,0,0.72) 76%, rgba(0,0,0,0.48) 100%)"
+      }
     : { background: palette.background, opacity: 0.78 };
   return {
     type: "div",
@@ -561,7 +564,7 @@ function photoSplit(slide: PhotoSplitSlide, image: string, context: RenderContex
               justifyContent: "center",
               alignItems: alignRight ? "flex-end" : "flex-start",
               overflow: "hidden",
-              padding: "146px 86px 168px",
+              padding: "130px 72px 150px",
               color: palette.ink,
               textAlign: alignRight ? "right" : "left"
             },
@@ -572,13 +575,14 @@ function photoSplit(slide: PhotoSplitSlide, image: string, context: RenderContex
                   display: "flex",
                   flexDirection: "column",
                   alignItems: alignRight ? "flex-end" : "flex-start",
-                  width: 820
+                  width: 900,
+                  transform: "translateY(26px)"
                 },
                 children: [
                   headline(slide.content, tone, emphasisStyle, {
-                    width: 820,
-                    fontSize: 92,
-                    lineHeight: 0.92,
+                    width: 900,
+                    fontSize: 100,
+                    lineHeight: 0.86,
                     textAlign: alignRight ? "right" : "left"
                   }),
                   slide.content.body
@@ -588,11 +592,11 @@ function photoSplit(slide: PhotoSplitSlide, image: string, context: RenderContex
                         props: {
                           "data-field": "content.body",
                           style: {
-                            width: 650,
-                            marginTop: 52,
-                            fontFamily: "Inter",
-                            fontSize: 29,
-                            lineHeight: 1.45,
+                            width: 620,
+                            marginTop: 40,
+                            fontFamily: "Instrument Sans",
+                            fontSize: 26,
+                            lineHeight: 1.32,
                             color: palette.ink,
                             whiteSpace: "pre-wrap",
                             wordBreak: "break-word"
@@ -605,31 +609,19 @@ function photoSplit(slide: PhotoSplitSlide, image: string, context: RenderContex
               }
             }
           }
-        },
-        {
-          type: "div",
-          props: {
-            style: {
-              position: "absolute",
-              left: 0,
-              right: 0,
-              bottom: 56,
-              display: "flex",
-              justifyContent: "center"
-            },
-            children: folio(context, tone, true)
-          }
         }
       ]
     }
   };
 }
 
-function photoBand(slide: PhotoBandSlide, image: string, context: RenderContext): Element {
+function photoBand(slide: PhotoBandSlide, image: string): Element {
   const { tone, emphasisStyle } = slide.options;
   const palette = palettes[tone];
   const overlay = tone === "ink"
-    ? { background: "#000000", opacity: 0.6 }
+    ? {
+        background: "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.66) 42%, rgba(0,0,0,0.72) 76%, rgba(0,0,0,0.48) 100%)"
+      }
     : { background: palette.background, opacity: 0.78 };
   return {
     type: "div",
@@ -685,7 +677,7 @@ function photoBand(slide: PhotoBandSlide, image: string, context: RenderContext)
               justifyContent: "center",
               alignItems: "center",
               overflow: "hidden",
-              padding: "146px 88px 168px",
+              padding: "130px 72px 150px",
               color: palette.ink,
               textAlign: "center"
             },
@@ -696,13 +688,14 @@ function photoBand(slide: PhotoBandSlide, image: string, context: RenderContext)
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
-                  width: 870
+                  width: 920,
+                  transform: "translateY(26px)"
                 },
                 children: [
                   headline(slide.content, tone, emphasisStyle, {
-                    width: 870,
-                    fontSize: 92,
-                    lineHeight: 0.92,
+                    width: 920,
+                    fontSize: 100,
+                    lineHeight: 0.86,
                     textAlign: "center"
                   }),
                   slide.content.caption
@@ -712,11 +705,11 @@ function photoBand(slide: PhotoBandSlide, image: string, context: RenderContext)
                         props: {
                           "data-field": "content.caption",
                           style: {
-                            width: 700,
-                            marginTop: 52,
-                            fontFamily: "Inter",
-                            fontSize: 29,
-                            lineHeight: 1.45,
+                            width: 680,
+                            marginTop: 40,
+                            fontFamily: "Instrument Sans",
+                            fontSize: 26,
+                            lineHeight: 1.32,
                             color: palette.ink,
                             whiteSpace: "pre-wrap",
                             wordBreak: "break-word"
@@ -729,20 +722,6 @@ function photoBand(slide: PhotoBandSlide, image: string, context: RenderContext)
               }
             }
           }
-        },
-        {
-          type: "div",
-          props: {
-            style: {
-              position: "absolute",
-              left: 0,
-              right: 0,
-              bottom: 56,
-              display: "flex",
-              justifyContent: "center"
-            },
-            children: folio(context, tone, true)
-          }
         }
       ]
     }
@@ -754,14 +733,12 @@ const renderers = {
   photo_split: async (slide: PhotoSplitSlide, context: RenderContext) =>
     photoSplit(
       slide,
-      await renderSlideImage(slide, context.carouselFile, context.workspace),
-      context
+      await renderSlideImage(slide, context.carouselFile, context.workspace)
     ),
   photo_band: async (slide: PhotoBandSlide, context: RenderContext) =>
     photoBand(
       slide,
-      await renderSlideImage(slide, context.carouselFile, context.workspace),
-      context
+      await renderSlideImage(slide, context.carouselFile, context.workspace)
     )
 } satisfies Record<LayoutId, (slide: never, context: never) => Promise<Element>>;
 
@@ -813,8 +790,8 @@ export async function renderSlideSvg(slide: Slide, context?: RenderContext): Pro
     fonts: [
       { name: "Bodoni Moda", data: fonts.serif, weight: 400, style: "normal" },
       { name: "Bodoni Moda", data: fonts.serifItalic, weight: 400, style: "italic" },
-      { name: "Inter", data: fonts.sans, weight: 400, style: "normal" },
-      { name: "Inter", data: fonts.sansSemibold, weight: 600, style: "normal" }
+      { name: "Instrument Sans", data: fonts.sans, weight: 400, style: "normal" },
+      { name: "Instrument Sans", data: fonts.sansMedium, weight: 500, style: "normal" }
     ],
     onNodeDetected(node) {
       if (typeof node.key === "string" && node.key.startsWith("field:")) {
