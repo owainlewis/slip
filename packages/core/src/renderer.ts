@@ -60,8 +60,8 @@ const palettes = {
 
 async function loadFonts() {
   fontsPromise ??= Promise.all([
-    readFile(require.resolve("@fontsource/source-serif-4/files/source-serif-4-latin-400-normal.woff")),
-    readFile(require.resolve("@fontsource/source-serif-4/files/source-serif-4-latin-400-italic.woff")),
+    readFile(require.resolve("@fontsource/bodoni-moda/files/bodoni-moda-latin-400-normal.woff")),
+    readFile(require.resolve("@fontsource/bodoni-moda/files/bodoni-moda-latin-400-italic.woff")),
     readFile(require.resolve("@fontsource/inter/files/inter-latin-400-normal.woff")),
     readFile(require.resolve("@fontsource/inter/files/inter-latin-600-normal.woff"))
   ]).then(([serif, serifItalic, sans, sansSemibold]) => ({
@@ -214,7 +214,7 @@ function headline(
       style: {
         display: "flex",
         flexDirection: "column",
-        fontFamily: "Source Serif 4",
+        fontFamily: "Bodoni Moda",
         fontWeight: 400,
         wordBreak: "break-word",
         ...style
@@ -301,9 +301,9 @@ function typeOnly(slide: TypeOnlySlide, context?: RenderContext): Element {
                   }
                 : null,
               headline(slide.content, tone, emphasisStyle, {
-                fontSize: centered ? 88 : 86,
-                lineHeight: 0.98,
-                letterSpacing: "-0.035em",
+                fontSize: centered ? 96 : 94,
+                lineHeight: 0.92,
+                letterSpacing: "-0.045em",
                 maxWidth: centered ? 884 : 860,
                 textAlign: centered ? "center" : "left"
               }),
@@ -315,8 +315,8 @@ function typeOnly(slide: TypeOnlySlide, context?: RenderContext): Element {
                       "data-field": "content.body",
                       style: {
                         fontFamily: "Inter",
-                        fontSize: 27,
-                        lineHeight: 1.5,
+                        fontSize: 29,
+                        lineHeight: 1.45,
                         maxWidth: centered ? 780 : 700,
                         marginTop: 58,
                         color: palette.muted,
@@ -425,9 +425,9 @@ function photoSplit(slide: PhotoSplitSlide, image: string, context: RenderContex
                 children: [
                   headline(slide.content, tone, emphasisStyle, {
                     width: 820,
-                    fontSize: 84,
-                    lineHeight: 0.98,
-                    letterSpacing: "-0.038em",
+                    fontSize: 92,
+                    lineHeight: 0.92,
+                    letterSpacing: "-0.045em",
                     textAlign: alignRight ? "right" : "left"
                   }),
                   slide.content.body
@@ -440,8 +440,8 @@ function photoSplit(slide: PhotoSplitSlide, image: string, context: RenderContex
                             width: 650,
                             marginTop: 52,
                             fontFamily: "Inter",
-                            fontSize: 27,
-                            lineHeight: 1.5,
+                            fontSize: 29,
+                            lineHeight: 1.45,
                             color: palette.ink,
                             whiteSpace: "pre-wrap",
                             wordBreak: "break-word"
@@ -550,9 +550,9 @@ function photoBand(slide: PhotoBandSlide, image: string, context: RenderContext)
                 children: [
                   headline(slide.content, tone, emphasisStyle, {
                     width: 870,
-                    fontSize: 84,
-                    lineHeight: 0.98,
-                    letterSpacing: "-0.038em",
+                    fontSize: 92,
+                    lineHeight: 0.92,
+                    letterSpacing: "-0.045em",
                     textAlign: "center"
                   }),
                   slide.content.caption
@@ -565,8 +565,8 @@ function photoBand(slide: PhotoBandSlide, image: string, context: RenderContext)
                             width: 700,
                             marginTop: 52,
                             fontFamily: "Inter",
-                            fontSize: 27,
-                            lineHeight: 1.5,
+                            fontSize: 29,
+                            lineHeight: 1.45,
                             color: palette.ink,
                             whiteSpace: "pre-wrap",
                             wordBreak: "break-word"
@@ -660,8 +660,8 @@ export async function renderSlideSvg(slide: Slide, context?: RenderContext): Pro
     width: 1080,
     height: 1350,
     fonts: [
-      { name: "Source Serif 4", data: fonts.serif, weight: 400, style: "normal" },
-      { name: "Source Serif 4", data: fonts.serifItalic, weight: 400, style: "italic" },
+      { name: "Bodoni Moda", data: fonts.serif, weight: 400, style: "normal" },
+      { name: "Bodoni Moda", data: fonts.serifItalic, weight: 400, style: "italic" },
       { name: "Inter", data: fonts.sans, weight: 400, style: "normal" },
       { name: "Inter", data: fonts.sansSemibold, weight: 600, style: "normal" }
     ],

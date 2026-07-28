@@ -6,8 +6,8 @@ export default defineConfig({
   dts: true,
   clean: true,
   external: [
+    "@fontsource/bodoni-moda",
     "@fontsource/inter",
-    "@fontsource/source-serif-4",
     "@hono/node-server",
     "@resvg/resvg-js",
     "chokidar",

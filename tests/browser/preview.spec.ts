@@ -49,7 +49,7 @@ test("lists and previews every polished example at 4:5", async ({ page }) => {
     await document.fonts.ready;
     return {
       inter: document.fonts.check('400 16px "Inter"'),
-      serif: document.fonts.check('700 16px "Source Serif 4"')
+      serif: document.fonts.check('400 16px "Bodoni Moda"')
     };
   });
   expect(fontsLoaded).toEqual({ inter: true, serif: true });

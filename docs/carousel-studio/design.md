@@ -164,7 +164,7 @@ The single editorial system uses:
 
 - 1080 × 1350 pixel canvas;
 - warm paper, near-black ink, and quiet supporting tones without decorative colour;
-- bundled regular and italic editorial serif faces with a neutral sans-serif;
+- bundled Bodoni Moda regular and italic display faces with Inter for supporting copy;
 - authored headline line breaks and explicit phrase emphasis;
 - centered typographic compositions, full-bleed crops, and purposeful whitespace;
 - fixed, deterministic paper texture shared by preview, PNG, and PDF rendering;
