@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { createRequire } from "node:module";
+import { create, type Font } from "fontkit";
 import satori from "satori";
 import { SlipError } from "./errors.js";
 import { renderSlideImage } from "./image.js";
@@ -12,12 +13,15 @@ import type {
 } from "./layouts.js";
 
 const require = createRequire(import.meta.url);
-let fontsPromise: Promise<{
+type LoadedFonts = {
   serif: ArrayBuffer;
   serifItalic: ArrayBuffer;
   sans: ArrayBuffer;
-  sansSemibold: ArrayBuffer;
-}> | undefined;
+  sansMedium: ArrayBuffer;
+};
+
+let fontsPromise: Promise<LoadedFonts> | undefined;
+let displayFaces: { normal: Font; italic: Font } | undefined;
 
 type Element = {
   type: string;
@@ -41,41 +45,47 @@ export interface RenderContext {
 
 const palettes = {
   paper: {
-    background: "#eee8dc",
-    ink: "#211f1b",
-    muted: "#625d53",
-    accent: "#9f4f38",
-    marked: "#d8df7a",
-    markedInk: "#211f1b"
+    background: "#f2f0ea",
+    ink: "#11110f",
+    muted: "#575650",
+    accent: "#11110f",
+    marked: "#11110f",
+    markedInk: "#11110f"
   },
   ink: {
-    background: "#20231f",
-    ink: "#f1eadc",
-    muted: "#c6bdad",
-    accent: "#d8df7a",
-    marked: "#d8df7a",
-    markedInk: "#20231f"
+    background: "#0d0d0c",
+    ink: "#f4f2ed",
+    muted: "#c7c5bf",
+    accent: "#f4f2ed",
+    marked: "#f4f2ed",
+    markedInk: "#0d0d0c"
   }
 } as const;
 
 async function loadFonts() {
   fontsPromise ??= Promise.all([
-    readFile(require.resolve("@fontsource/source-serif-4/files/source-serif-4-latin-400-normal.woff")),
-    readFile(require.resolve("@fontsource/source-serif-4/files/source-serif-4-latin-400-italic.woff")),
-    readFile(require.resolve("@fontsource/inter/files/inter-latin-400-normal.woff")),
-    readFile(require.resolve("@fontsource/inter/files/inter-latin-600-normal.woff"))
-  ]).then(([serif, serifItalic, sans, sansSemibold]) => ({
-    serif: serif.buffer.slice(serif.byteOffset, serif.byteOffset + serif.byteLength),
-    serifItalic: serifItalic.buffer.slice(
-      serifItalic.byteOffset,
-      serifItalic.byteOffset + serifItalic.byteLength
-    ),
-    sans: sans.buffer.slice(sans.byteOffset, sans.byteOffset + sans.byteLength),
-    sansSemibold: sansSemibold.buffer.slice(
-      sansSemibold.byteOffset,
-      sansSemibold.byteOffset + sansSemibold.byteLength
-    )
-  }));
+    readFile(require.resolve("@fontsource/bodoni-moda/files/bodoni-moda-latin-400-normal.woff")),
+    readFile(require.resolve("@fontsource/bodoni-moda/files/bodoni-moda-latin-400-italic.woff")),
+    readFile(require.resolve("@fontsource/instrument-sans/files/instrument-sans-latin-400-normal.woff")),
+    readFile(require.resolve("@fontsource/instrument-sans/files/instrument-sans-latin-500-normal.woff"))
+  ]).then(([serif, serifItalic, sans, sansMedium]) => {
+    displayFaces = {
+      normal: create(serif) as Font,
+      italic: create(serifItalic) as Font
+    };
+    return {
+      serif: serif.buffer.slice(serif.byteOffset, serif.byteOffset + serif.byteLength),
+      serifItalic: serifItalic.buffer.slice(
+        serifItalic.byteOffset,
+        serifItalic.byteOffset + serifItalic.byteLength
+      ),
+      sans: sans.buffer.slice(sans.byteOffset, sans.byteOffset + sans.byteLength),
+      sansMedium: sansMedium.buffer.slice(
+        sansMedium.byteOffset,
+        sansMedium.byteOffset + sansMedium.byteLength
+      )
+    };
+  });
   return fontsPromise;
 }
 
@@ -142,9 +152,9 @@ function folio(context: RenderContext | undefined, tone: Tone): Element | null {
       "data-folio": true,
       "data-folio-value": value,
       style: {
-        fontFamily: "Inter",
+        fontFamily: "Instrument Sans",
         fontSize: 18,
-        fontWeight: 600,
+        fontWeight: 500,
         letterSpacing: "0.12em",
         color: palette.muted
       },
@@ -153,42 +163,223 @@ function folio(context: RenderContext | undefined, tone: Tone): Element | null {
   };
 }
 
-function headlineLineChildren(
+type StyledCharacter = {
+  value: string;
+  italic: boolean;
+  underline: boolean;
+};
+
+type ShapedSegment = {
+  text: string;
+  font: Font;
+  underline: boolean;
+};
+
+function displayFonts(): { normal: Font; italic: Font } {
+  if (!displayFaces) throw new Error("display fonts must be loaded before shaping headlines");
+  return displayFaces;
+}
+
+function styledCharacters(
   line: string,
   emphasis: string | undefined,
-  emphasisStyle: EmphasisStyle,
-  tone: Tone
-): unknown {
-  if (!emphasis) return line;
-  const index = line.indexOf(emphasis);
-  if (index < 0) return line;
-  const palette = palettes[tone];
-  const remainder = line.slice(index + emphasis.length);
-  const punctuation = remainder.match(/^[,.;:!?…]+/)?.[0] ?? "";
-  const emphasisCss = emphasisStyle === "mark"
-    ? {
-        color: palette.ink,
-        textDecorationLine: "underline",
-        textDecorationStyle: "solid",
-        textDecorationColor: palette.marked
+  emphasisStyle: EmphasisStyle
+): StyledCharacter[] {
+  const emphasisUtf16Start = emphasis ? line.indexOf(emphasis) : -1;
+  const emphasisStart = emphasisUtf16Start < 0
+    ? -1
+    : Array.from(line.slice(0, emphasisUtf16Start)).length;
+  const remainder = emphasisUtf16Start >= 0
+    ? line.slice(emphasisUtf16Start + emphasis!.length)
+    : "";
+  const punctuation = Array.from(remainder.match(/^[,.;:!?…]+/)?.[0] ?? "").length;
+  const emphasisEnd = emphasisStart < 0
+    ? -1
+    : emphasisStart + Array.from(emphasis!).length + punctuation;
+  return Array.from(line).map((value, index) => {
+    const highlighted = index >= emphasisStart && index < emphasisEnd;
+    return {
+      value,
+      italic: highlighted && emphasisStyle === "italic",
+      underline: highlighted && emphasisStyle === "mark"
+    };
+  });
+}
+
+function segments(characters: StyledCharacter[]): ShapedSegment[] {
+  const fonts = displayFonts();
+  return characters.reduce<ShapedSegment[]>((result, character) => {
+    const font = character.italic ? fonts.italic : fonts.normal;
+    const previous = result.at(-1);
+    if (previous?.font === font && previous.underline === character.underline) {
+      previous.text += character.value;
+    } else {
+      result.push({ text: character.value, font, underline: character.underline });
+    }
+    return result;
+  }, []);
+}
+
+function shapedWidth(characters: StyledCharacter[], fontSize: number): number {
+  return segments(characters).reduce(
+    (width, segment) =>
+      width + segment.font.layout(segment.text).advanceWidth * fontSize / segment.font.unitsPerEm,
+    0
+  );
+}
+
+function trimLine(characters: StyledCharacter[]): StyledCharacter[] {
+  let start = 0;
+  let end = characters.length;
+  while (start < end && /\s/.test(characters[start]!.value)) start += 1;
+  while (end > start && /\s/.test(characters[end - 1]!.value)) end -= 1;
+  return characters.slice(start, end);
+}
+
+function wrapLine(
+  characters: StyledCharacter[],
+  fontSize: number,
+  maxWidth: number
+): StyledCharacter[][] {
+  const lines: StyledCharacter[][] = [];
+  let current: StyledCharacter[] = [];
+  for (const character of characters) {
+    const candidate = [...current, character];
+    if (current.length === 0 || shapedWidth(candidate, fontSize) <= maxWidth) {
+      current = candidate;
+      continue;
+    }
+    let breakIndex = -1;
+    for (let index = current.length - 1; index >= 0; index -= 1) {
+      if (/\s/.test(current[index]!.value)) {
+        breakIndex = index;
+        break;
       }
-    : {
-        fontStyle: "italic",
-        color: palette.accent
-      };
-  return [
-    line.slice(0, index),
-    {
-      type: "span",
-      key: "headline-emphasis",
-      props: {
-        "data-emphasis": emphasisStyle,
-        style: emphasisCss,
-        children: `${emphasis}${punctuation}`
+    }
+    if (breakIndex >= 0) {
+      lines.push(trimLine(current.slice(0, breakIndex)));
+      current = [...trimLine(current.slice(breakIndex + 1)), character];
+    } else {
+      lines.push(trimLine(current));
+      current = [character];
+    }
+  }
+  if (current.length > 0) lines.push(trimLine(current));
+  return lines.filter((line) => line.length > 0);
+}
+
+function shapedHeadlineLine(
+  characters: StyledCharacter[],
+  fontSize: number,
+  lineHeight: number,
+  maxWidth: number,
+  textAlign: unknown,
+  fill: string,
+  lineIndex: number
+): Element {
+  const shaped = segments(characters).map((segment) => ({
+    ...segment,
+    run: segment.font.layout(segment.text)
+  }));
+  const scale = fontSize / displayFonts().normal.unitsPerEm;
+  const width = shaped.reduce((total, segment) => total + segment.run.advanceWidth * scale, 0);
+  const height = fontSize * lineHeight;
+  const ascent = Math.max(...shaped.map((segment) => segment.font.ascent)) * scale;
+  const descent = Math.min(...shaped.map((segment) => segment.font.descent)) * scale;
+  const metricHeight = ascent - descent;
+  const top = (height - metricHeight) / 2;
+  const underlineBottom = shaped.reduce(
+    (bottom, segment) =>
+      segment.underline
+        ? Math.max(
+            bottom,
+            ascent
+              - segment.font.underlinePosition * scale
+              + Math.max(1, segment.font.underlineThickness * scale)
+          )
+        : bottom,
+    metricHeight
+  );
+  const viewportHeight = Math.max(metricHeight, underlineBottom);
+  const baseline = ascent;
+  let segmentX = textAlign === "center"
+    ? (maxWidth - width) / 2
+    : textAlign === "right"
+      ? maxWidth - width
+      : 0;
+  const children: Element[] = [];
+  let pathMinX = 0;
+  let pathMaxX = maxWidth;
+
+  shaped.forEach((segment, segmentIndex) => {
+    let glyphX = segmentX;
+    segment.run.glyphs.forEach((glyph, glyphIndex) => {
+      const position = segment.run.positions[glyphIndex]!;
+      const originX = glyphX + position.xOffset * scale;
+      pathMinX = Math.min(pathMinX, originX + glyph.bbox.minX * scale);
+      pathMaxX = Math.max(pathMaxX, originX + glyph.bbox.maxX * scale);
+      children.push({
+        type: "path",
+        key: `headline-${lineIndex}-${segmentIndex}-${glyphIndex}`,
+        props: {
+          d: glyph.path.toSVG(),
+          fill,
+          transform: `translate(${originX} ${baseline - position.yOffset * scale}) scale(${scale} ${-scale})`
+        }
+      });
+      glyphX += position.xAdvance * scale;
+    });
+    if (segment.underline) {
+      const underlineY = baseline - segment.font.underlinePosition * scale;
+      children.push({
+        type: "rect",
+        key: `headline-underline-${lineIndex}-${segmentIndex}`,
+        props: {
+          x: segmentX,
+          y: underlineY,
+          width: segment.run.advanceWidth * scale,
+          height: Math.max(1, segment.font.underlineThickness * scale),
+          fill
+        }
+      });
+    }
+    segmentX += segment.run.advanceWidth * scale;
+  });
+  const viewportLeft = Math.min(0, pathMinX);
+  const viewportRight = Math.max(maxWidth, pathMaxX);
+  const viewportWidth = viewportRight - viewportLeft;
+
+  return {
+    type: "div",
+    key: `headline-line-${lineIndex}`,
+    props: {
+      style: {
+        position: "relative",
+        display: "flex",
+        width: maxWidth,
+        height,
+        flexShrink: 0,
+        overflow: "visible"
+      },
+      children: {
+        type: "svg",
+        props: {
+          width: viewportWidth,
+          height: viewportHeight,
+          viewBox: `${viewportLeft} 0 ${viewportWidth} ${viewportHeight}`,
+          style: {
+            position: "absolute",
+            top,
+            left: viewportLeft,
+            display: "block",
+            width: viewportWidth,
+            height: viewportHeight
+          },
+          children
+        }
       }
-    },
-    remainder.slice(punctuation.length)
-  ];
+    }
+  };
 }
 
 function headline(
@@ -198,6 +389,22 @@ function headline(
   style: Record<string, unknown>
 ): Element {
   let emphasisRendered = false;
+  const textAlign = style.textAlign;
+  const fontSize = Number(style.fontSize);
+  const lineHeight = Number(style.lineHeight);
+  const maxWidth = Number(style.maxWidth ?? style.width);
+  const palette = palettes[tone];
+  const lines = content.headline.split("\n").flatMap((line) => {
+    const lineEmphasis = !emphasisRendered && content.emphasis && line.includes(content.emphasis)
+      ? content.emphasis
+      : undefined;
+    if (lineEmphasis) emphasisRendered = true;
+    return wrapLine(
+      styledCharacters(line, lineEmphasis, emphasisStyle),
+      fontSize,
+      maxWidth
+    );
+  });
   return {
     type: "div",
     key: "field:content.headline",
@@ -206,32 +413,20 @@ function headline(
       style: {
         display: "flex",
         flexDirection: "column",
-        fontFamily: "Source Serif 4",
-        fontWeight: 400,
-        wordBreak: "break-word",
+        width: maxWidth,
         ...style
       },
-      children: content.headline.split("\n").map((line, index) => {
-        const lineEmphasis = !emphasisRendered && content.emphasis && line.includes(content.emphasis)
-          ? content.emphasis
-          : undefined;
-        if (lineEmphasis) emphasisRendered = true;
-        return {
-          type: "div",
-          key: `headline-line-${index}`,
-          props: {
-            "data-headline-line": index + 1,
-            style: {
-              width: "100%",
-              display: "flex",
-              flexWrap: "wrap",
-              whiteSpace: "pre-wrap",
-              justifyContent: style.textAlign === "center" ? "center" : "flex-start"
-            },
-            children: headlineLineChildren(line, lineEmphasis, emphasisStyle, tone)
-          }
-        };
-      })
+      children: lines.map((line, index) =>
+        shapedHeadlineLine(
+          line,
+          fontSize,
+          lineHeight,
+          maxWidth,
+          textAlign,
+          palette.ink,
+          index
+        )
+      )
     }
   };
 }
@@ -252,13 +447,44 @@ function typeOnly(slide: TypeOnlySlide, context?: RenderContext): Element {
         justifyContent: "center",
         alignItems: centered ? "center" : "flex-start",
         overflow: "hidden",
-        padding: centered ? "120px 88px 154px" : "116px 86px 150px",
+        padding: centered ? "132px 72px 154px" : "132px 84px 154px",
         background: palette.background,
         color: palette.ink,
         textAlign: centered ? "center" : "left"
       },
       children: [
         paperTexture(),
+        slide.content.eyebrow
+          ? {
+              type: "div",
+              key: "field:content.eyebrow",
+              props: {
+                "data-field": "content.eyebrow",
+                style: {
+                  position: "absolute",
+                  top: 94,
+                  ...(centered
+                    ? {
+                        left: 0,
+                        width: 1080,
+                        display: "flex",
+                        justifyContent: "center"
+                      }
+                    : { left: 84 }),
+                  fontFamily: "Instrument Sans",
+                  fontSize: 15,
+                  fontWeight: 500,
+                  lineHeight: 1.2,
+                  letterSpacing: "0.28em",
+                  color: palette.muted,
+                  textAlign: centered ? "center" : "left",
+                  whiteSpace: "pre-wrap",
+                  wordBreak: "break-word"
+                },
+                children: slide.content.eyebrow.toUpperCase()
+              }
+            }
+          : null,
         {
           type: "div",
           props: {
@@ -268,36 +494,14 @@ function typeOnly(slide: TypeOnlySlide, context?: RenderContext): Element {
               flexDirection: "column",
               alignItems: centered ? "center" : "flex-start",
               width: "100%",
-              maxWidth: centered ? 900 : 920,
-              marginTop: centered ? -24 : 48
+              maxWidth: centered ? 936 : 900,
+              transform: "translateY(-18px)"
             },
             children: [
-              slide.content.eyebrow
-                ? {
-                    type: "div",
-                    key: "field:content.eyebrow",
-                    props: {
-                      "data-field": "content.eyebrow",
-                      style: {
-                        fontFamily: "Inter",
-                        fontSize: 21,
-                        fontWeight: 600,
-                        lineHeight: 1.2,
-                        letterSpacing: "0.18em",
-                        color: palette.accent,
-                        marginBottom: 52,
-                        whiteSpace: "pre-wrap",
-                        wordBreak: "break-word"
-                      },
-                      children: slide.content.eyebrow.toUpperCase()
-                    }
-                  }
-                : null,
               headline(slide.content, tone, emphasisStyle, {
-                fontSize: centered ? 96 : 104,
-                lineHeight: 0.94,
-                letterSpacing: "-0.038em",
-                maxWidth: centered ? 900 : 920,
+                fontSize: centered ? 106 : 102,
+                lineHeight: 0.86,
+                maxWidth: centered ? 936 : 900,
                 textAlign: centered ? "center" : "left"
               }),
               slide.content.body
@@ -307,11 +511,11 @@ function typeOnly(slide: TypeOnlySlide, context?: RenderContext): Element {
                     props: {
                       "data-field": "content.body",
                       style: {
-                        fontFamily: "Inter",
-                        fontSize: 29,
-                        lineHeight: 1.48,
-                        maxWidth: centered ? 760 : 730,
-                        marginTop: 54,
+                        fontFamily: "Instrument Sans",
+                        fontSize: 25,
+                        lineHeight: 1.36,
+                        maxWidth: centered ? 720 : 660,
+                        marginTop: 48,
                         color: palette.muted,
                         whiteSpace: "pre-wrap",
                         wordBreak: "break-word"
@@ -328,10 +532,10 @@ function typeOnly(slide: TypeOnlySlide, context?: RenderContext): Element {
           props: {
             style: {
               position: "absolute",
-              bottom: 62,
+              bottom: 56,
               display: "flex",
               justifyContent: centered ? "center" : "flex-end",
-              ...(centered ? { left: 0, right: 0 } : { right: 86 })
+              ...(centered ? { left: 0, right: 0 } : { right: 96 })
             },
             children: folio(context, tone)
           }
@@ -341,112 +545,15 @@ function typeOnly(slide: TypeOnlySlide, context?: RenderContext): Element {
   };
 }
 
-function photoSplit(slide: PhotoSplitSlide, image: string, context: RenderContext): Element {
+function photoSplit(slide: PhotoSplitSlide, image: string): Element {
   const { side, tone, emphasisStyle } = slide.options;
   const palette = palettes[tone];
-  const photographLeft = side === "left" ? 0 : 378;
-  const surfaceLeft = side === "left" ? 493 : 62;
-  return {
-    type: "div",
-    props: {
-      style: {
-        position: "relative",
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        overflow: "hidden",
-        background: palette.background,
-        color: palette.ink
-      },
-      children: [
-        {
-          type: "img",
-          props: {
-            src: image,
-            width: 702,
-            height: 1350,
-            style: {
-              position: "absolute",
-              left: photographLeft,
-              top: 0,
-              width: 702,
-              height: 1350,
-              objectFit: "fill"
-            }
-          }
-        },
-        {
-          type: "div",
-          props: {
-            style: {
-              position: "absolute",
-              left: surfaceLeft,
-              top: 126,
-              width: 525,
-              height: 1098,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              overflow: "hidden",
-              padding: "68px 58px 48px",
-              background: palette.background
-            },
-            children: [
-              paperTexture(),
-              {
-                type: "div",
-                props: {
-                  style: {
-                    position: "relative",
-                    display: "flex",
-                    flexDirection: "column"
-                  },
-                  children: [
-                    headline(slide.content, tone, emphasisStyle, {
-                      fontSize: 66,
-                      lineHeight: 0.96,
-                      letterSpacing: "-0.035em"
-                    }),
-                    slide.content.body
-                      ? {
-                          type: "div",
-                          key: "field:content.body",
-                          props: {
-                            "data-field": "content.body",
-                            style: {
-                              fontFamily: "Inter",
-                              fontSize: 25,
-                              lineHeight: 1.46,
-                              marginTop: 42,
-                              color: palette.muted,
-                              whiteSpace: "pre-wrap",
-                              wordBreak: "break-word"
-                            },
-                            children: slide.content.body
-                          }
-                        }
-                      : null
-                  ]
-                }
-              },
-              {
-                type: "div",
-                props: {
-                  style: { position: "relative", display: "flex" },
-                  children: folio(context, tone)
-                }
-              }
-            ]
-          }
-        }
-      ]
-    }
-  };
-}
-
-function photoBand(slide: PhotoBandSlide, image: string, context: RenderContext): Element {
-  const { tone, emphasisStyle } = slide.options;
-  const palette = palettes[tone];
+  const alignRight = side === "left";
+  const overlay = tone === "ink"
+    ? {
+        background: "linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.66) 42%, rgba(0,0,0,0.72) 76%, rgba(0,0,0,0.6) 100%)"
+      }
+    : { background: palette.background, opacity: 0.78 };
   return {
     type: "div",
     props: {
@@ -465,13 +572,13 @@ function photoBand(slide: PhotoBandSlide, image: string, context: RenderContext)
           props: {
             src: image,
             width: 1080,
-            height: 820,
+            height: 1350,
             style: {
               position: "absolute",
               left: 0,
               top: 0,
               width: 1080,
-              height: 820,
+              height: 1350,
               objectFit: "fill"
             }
           }
@@ -481,59 +588,112 @@ function photoBand(slide: PhotoBandSlide, image: string, context: RenderContext)
           props: {
             style: {
               position: "absolute",
-              top: 654,
-              right: 68,
-              width: 862,
-              height: 594,
+              left: 0,
+              top: 0,
+              width: 1080,
+              height: 1350,
+              ...overlay
+            }
+          }
+        },
+        {
+          type: "div",
+          props: {
+            style: {
+              position: "relative",
+              width: "100%",
+              height: "100%",
               display: "flex",
               flexDirection: "column",
+              justifyContent: "center",
+              alignItems: alignRight ? "flex-end" : "flex-start",
               overflow: "hidden",
-              padding: "58px 60px 50px",
-              background: palette.background
+              padding: "130px 72px 150px",
+              color: palette.ink,
+              textAlign: alignRight ? "right" : "left"
             },
-            children: [
-              paperTexture(),
-              {
-                type: "div",
-                props: {
-                  style: {
-                    position: "relative",
-                    display: "flex",
-                    alignItems: "flex-start",
-                    width: "100%"
-                  },
-                  children: [
-                    headline(slide.content, tone, emphasisStyle, {
-                      width: slide.content.caption ? 500 : 742,
-                      fontSize: 64,
-                      lineHeight: 0.96,
-                      letterSpacing: "-0.035em"
-                    }),
-                    slide.content.caption
-                      ? {
-                          type: "div",
-                          key: "field:content.caption",
-                          props: {
-                            "data-field": "content.caption",
-                            style: {
-                              width: 210,
-                              marginLeft: "auto",
-                              paddingTop: 6,
-                              fontFamily: "Inter",
-                              fontSize: 22,
-                              lineHeight: 1.45,
-                              color: palette.muted,
-                              whiteSpace: "pre-wrap",
-                              wordBreak: "break-word"
-                            },
-                            children: slide.content.caption
-                          }
+            children: {
+              type: "div",
+              props: {
+                style: {
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: alignRight ? "flex-end" : "flex-start",
+                  width: 900,
+                  transform: "translateY(26px)"
+                },
+                children: [
+                  headline(slide.content, tone, emphasisStyle, {
+                    width: 900,
+                    fontSize: 100,
+                    lineHeight: 0.86,
+                    textAlign: alignRight ? "right" : "left"
+                  }),
+                  slide.content.body
+                    ? {
+                        type: "div",
+                        key: "field:content.body",
+                        props: {
+                          "data-field": "content.body",
+                          style: {
+                            width: 620,
+                            marginTop: 40,
+                            fontFamily: "Instrument Sans",
+                            fontSize: 26,
+                            lineHeight: 1.32,
+                            color: palette.ink,
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word"
+                          },
+                          children: slide.content.body
                         }
-                      : null
-                  ]
-                }
+                      }
+                    : null
+                ]
               }
-            ]
+            }
+          }
+        }
+      ]
+    }
+  };
+}
+
+function photoBand(slide: PhotoBandSlide, image: string): Element {
+  const { tone, emphasisStyle } = slide.options;
+  const palette = palettes[tone];
+  const overlay = tone === "ink"
+    ? {
+        background: "linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.66) 42%, rgba(0,0,0,0.72) 76%, rgba(0,0,0,0.6) 100%)"
+      }
+    : { background: palette.background, opacity: 0.78 };
+  return {
+    type: "div",
+    props: {
+      style: {
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        overflow: "hidden",
+        background: palette.background,
+        color: palette.ink
+      },
+      children: [
+        {
+          type: "img",
+          props: {
+            src: image,
+            width: 1080,
+            height: 1350,
+            style: {
+              position: "absolute",
+              left: 0,
+              top: 0,
+              width: 1080,
+              height: 1350,
+              objectFit: "fill"
+            }
           }
         },
         {
@@ -541,11 +701,70 @@ function photoBand(slide: PhotoBandSlide, image: string, context: RenderContext)
           props: {
             style: {
               position: "absolute",
-              left: 68,
-              bottom: 48,
-              display: "flex"
+              left: 0,
+              top: 0,
+              width: 1080,
+              height: 1350,
+              ...overlay
+            }
+          }
+        },
+        {
+          type: "div",
+          props: {
+            style: {
+              position: "relative",
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              overflow: "hidden",
+              padding: "130px 72px 150px",
+              color: palette.ink,
+              textAlign: "center"
             },
-            children: folio(context, tone)
+            children: {
+              type: "div",
+              props: {
+                style: {
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  width: 920,
+                  transform: "translateY(26px)"
+                },
+                children: [
+                  headline(slide.content, tone, emphasisStyle, {
+                    width: 920,
+                    fontSize: 100,
+                    lineHeight: 0.86,
+                    textAlign: "center"
+                  }),
+                  slide.content.caption
+                    ? {
+                        type: "div",
+                        key: "field:content.caption",
+                        props: {
+                          "data-field": "content.caption",
+                          style: {
+                            width: 680,
+                            marginTop: 40,
+                            fontFamily: "Instrument Sans",
+                            fontSize: 26,
+                            lineHeight: 1.32,
+                            color: palette.ink,
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word"
+                          },
+                          children: slide.content.caption
+                        }
+                      }
+                    : null
+                ]
+              }
+            }
           }
         }
       ]
@@ -558,14 +777,12 @@ const renderers = {
   photo_split: async (slide: PhotoSplitSlide, context: RenderContext) =>
     photoSplit(
       slide,
-      await renderSlideImage(slide, context.carouselFile, context.workspace),
-      context
+      await renderSlideImage(slide, context.carouselFile, context.workspace)
     ),
   photo_band: async (slide: PhotoBandSlide, context: RenderContext) =>
     photoBand(
       slide,
-      await renderSlideImage(slide, context.carouselFile, context.workspace),
-      context
+      await renderSlideImage(slide, context.carouselFile, context.workspace)
     )
 } satisfies Record<LayoutId, (slide: never, context: never) => Promise<Element>>;
 
@@ -581,8 +798,15 @@ function scopeSvgIds(svg: string, slideId: string): string {
 }
 
 function annotateSvg(svg: string, slide: Slide, context?: RenderContext): string {
+  const headlineAlign = slide.layout === "type_only"
+    ? slide.options.align
+    : slide.layout === "photo_split"
+      ? slide.options.side === "left" ? "right" : "left"
+      : "center";
   const attributes = [
     `data-headline-lines="${slide.content.headline.split("\n").length}"`,
+    `data-headline-align="${headlineAlign}"`,
+    'data-text-shaping="fontkit"',
     slide.content.emphasis ? `data-emphasis-style="${slide.options.emphasisStyle}"` : undefined,
     context?.slideIndex !== undefined && context.slideCount !== undefined
       ? `data-folio-value="${String(context.slideIndex + 1).padStart(2, "0")} / ${String(
@@ -608,10 +832,10 @@ export async function renderSlideSvg(slide: Slide, context?: RenderContext): Pro
     width: 1080,
     height: 1350,
     fonts: [
-      { name: "Source Serif 4", data: fonts.serif, weight: 400, style: "normal" },
-      { name: "Source Serif 4", data: fonts.serifItalic, weight: 400, style: "italic" },
-      { name: "Inter", data: fonts.sans, weight: 400, style: "normal" },
-      { name: "Inter", data: fonts.sansSemibold, weight: 600, style: "normal" }
+      { name: "Bodoni Moda", data: fonts.serif, weight: 400, style: "normal" },
+      { name: "Bodoni Moda", data: fonts.serifItalic, weight: 400, style: "italic" },
+      { name: "Instrument Sans", data: fonts.sans, weight: 400, style: "normal" },
+      { name: "Instrument Sans", data: fonts.sansMedium, weight: 500, style: "normal" }
     ],
     onNodeDetected(node) {
       if (typeof node.key === "string" && node.key.startsWith("field:")) {

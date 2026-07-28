@@ -60,7 +60,7 @@ describe("image framing", () => {
     expect(lowerRight.height).toBe(1000);
   });
 
-  it("keeps schema-v1 540×1350 photo_split sources valid for the wider composition", async () => {
+  it("requires enough source pixels for the full-bleed photo_split output", async () => {
     const { root, carousel } = await workspace();
     const asset = join(root, "assets", "legacy-split.svg");
     await writeFile(
@@ -69,26 +69,28 @@ describe("image framing", () => {
     );
     await writeFile(carousel, document("../../assets/legacy-split.svg", 1, "photo_split"));
 
-    const parsed = await readCarousel(carousel, root);
-    const slide = parsed.slides[0]!;
-    expect(slide.layout).toBe("photo_split");
-    if (slide.layout !== "photo_split") throw new Error("expected photo_split fixture");
-
-    const dataUri = await renderSlideImage(slide, carousel, root);
-    const rendered = await sharp(Buffer.from(dataUri.split(",")[1]!, "base64")).metadata();
-    expect(rendered).toMatchObject({ format: "png", width: 702, height: 1350 });
-
-    await writeFile(carousel, document("../../assets/legacy-split.svg", 1.01, "photo_split"));
     await expect(readCarousel(carousel, root)).rejects.toMatchObject({
       yamlPath: "$.slides[0].image.src",
       message: expect.stringContaining("effectively undersized")
     });
+
+    await writeFile(
+      asset,
+      '<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1350"><rect width="1080" height="1350" fill="#345"/></svg>'
+    );
+    const parsed = await readCarousel(carousel, root);
+    const slide = parsed.slides[0]!;
+    expect(slide.layout).toBe("photo_split");
+    if (slide.layout !== "photo_split") throw new Error("expected photo_split fixture");
+    const dataUri = await renderSlideImage(slide, carousel, root);
+    const rendered = await sharp(Buffer.from(dataUri.split(",")[1]!, "base64")).metadata();
+    expect(rendered).toMatchObject({ format: "png", width: 1080, height: 1350 });
   });
 
   it("accepts a valid local image and reports missing, corrupt, outside, and undersized images", async () => {
     const { root, carousel } = await workspace();
     const asset = join(root, "assets", "large.svg");
-    await writeFile(asset, '<svg xmlns="http://www.w3.org/2000/svg" width="5400" height="3600"><rect width="5400" height="3600" fill="#345"/></svg>');
+    await writeFile(asset, '<svg xmlns="http://www.w3.org/2000/svg" width="6750" height="4500"><rect width="6750" height="4500" fill="#345"/></svg>');
     await writeFile(carousel, document("../../assets/large.svg", 3));
     await expect(readCarousel(carousel, root)).resolves.toMatchObject({ id: "welcome" });
 
@@ -107,7 +109,7 @@ describe("image framing", () => {
 
     const outside = await mkdtemp(join(tmpdir(), "slip-outside-"));
     directories.push(outside);
-    await writeFile(join(outside, "outside.svg"), '<svg xmlns="http://www.w3.org/2000/svg" width="5400" height="3600"/>');
+    await writeFile(join(outside, "outside.svg"), '<svg xmlns="http://www.w3.org/2000/svg" width="6750" height="4500"/>');
     await writeFile(carousel, document(relative(dirname(carousel), join(outside, "outside.svg"))));
     await expect(readCarousel(carousel, root)).rejects.toMatchObject({
       yamlPath: "$.slides[0].image.src",

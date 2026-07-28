@@ -182,8 +182,8 @@ export async function startSlipServer(options: StartServerOptions): Promise<Slip
   const webRoot = options.webRoot ?? fileURLToPath(new URL("../../web", import.meta.url));
   const webRequire = createRequire(join(webRoot, "package.json"));
   const fontRoots = [
-    dirname(webRequire.resolve("@fontsource/inter/package.json")),
-    dirname(webRequire.resolve("@fontsource/source-serif-4/package.json"))
+    dirname(webRequire.resolve("@fontsource/bodoni-moda/package.json")),
+    dirname(webRequire.resolve("@fontsource/instrument-sans/package.json")),
   ];
   let vite: ViteDevServer | undefined;
   let watcher: FSWatcher | undefined;

@@ -1,5 +1,5 @@
 :root {
-  font-family: "Inter", sans-serif;
+  font-family: "Instrument Sans", sans-serif;
   color: #171714;
   background: #e8e2d8;
   font-synthesis: none;
@@ -47,7 +47,7 @@ main {
 }
 
 h1, h2 {
-  font-family: "Source Serif 4", serif;
+  font-family: "Bodoni Moda", serif;
   margin: 0;
 }
 
@@ -79,7 +79,7 @@ h1 { font-size: clamp(54px, 9vw, 96px); line-height: .9; }
 }
 
 .thumbnail span {
-  font-family: "Source Serif 4", serif;
+  font-family: "Bodoni Moda", serif;
   font-size: 38px;
   line-height: 1.04;
 }

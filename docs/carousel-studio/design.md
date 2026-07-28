@@ -147,13 +147,13 @@ schema version 1 documents.
 | Layout | Content | Image | Options | Geometry |
 | --- | --- | --- | --- | --- |
 | `type_only` | `headline` required, 1–100 chars; `emphasis` optional exact phrase, 1–48 chars; `body` optional, 1–260 chars; `eyebrow` optional, 1–40 chars | Not allowed | `align`: `left` or `center`; `tone`: `paper` or `ink`; `emphasisStyle`: `italic` or `mark` | Oversized type on a tactile paper or ink canvas |
-| `photo_split` | `headline` required, 1–80 chars; `emphasis` optional exact phrase, 1–48 chars; `body` optional, 1–220 chars | Required | `side`: `left` or `right`; shared tone and emphasis options | Full-height 65% crop with an offset opaque text surface that overlaps the image |
-| `photo_band` | `headline` required, 1–80 chars; `emphasis` optional exact phrase, 1–48 chars; `caption` optional, 1–120 chars | Required | Shared tone and emphasis options | Wide crop with an asymmetric inset opaque text surface |
+| `photo_split` | `headline` required, 1–80 chars; `emphasis` optional exact phrase, 1–48 chars; `body` optional, 1–220 chars | Required | `side`: `left` or `right`; shared tone and emphasis options | Full-bleed crop with editorial copy anchored opposite the focal subject |
+| `photo_band` | `headline` required, 1–80 chars; `emphasis` optional exact phrase, 1–48 chars; `caption` optional, 1–120 chars | Required | Shared tone and emphasis options | Full-bleed crop with centered editorial copy |
 
 All layouts use fixed regions, type styles, spacing, and safe areas. Text
-surfaces remain fully opaque even where they overlap photography. Overflow is
-an export-blocking validation error rather than triggering auto-shrink or
-truncation.
+over photography remains legible through a restrained uniform darkening layer.
+Overflow is an export-blocking validation error rather than triggering
+auto-shrink or truncation.
 
 Changing a layout is a manual YAML edit. Compatible field migration is outside
 the MVP.
@@ -163,16 +163,19 @@ the MVP.
 The single editorial system uses:
 
 - 1080 × 1350 pixel canvas;
-- warm paper, near-black ink, quiet supporting tones, and one restrained accent;
-- bundled regular and italic editorial serif faces with a neutral sans-serif;
+- warm paper, near-black ink, and quiet supporting tones without decorative colour;
+- bundled Bodoni Moda regular and italic display faces, shaped with kerning and
+  ligatures, with Instrument Sans for supporting copy;
 - authored headline line breaks and explicit phrase emphasis;
-- asymmetric crops, offset opaque text surfaces, and purposeful whitespace;
+- optically staged typographic compositions, full-bleed crops, and purposeful whitespace;
 - fixed, deterministic paper texture shared by preview, PNG, and PDF rendering;
-- quiet context-driven folios such as `01 / 05`;
+- quiet context-driven folios such as `01 / 05` on typographic slides;
 - square corners and no repeated brand footer.
 
-The system excludes gradients, glass effects, decorative blobs, icon grids,
-excessive cards, automatic word highlighting, and user-authored CSS.
+The system excludes decorative gradients, glass effects, decorative blobs,
+icon grids, excessive cards, automatic word highlighting, and user-authored
+CSS. Photographic layouts may use a restrained tonal gradient solely to keep
+copy readable while retaining image depth.
 
 ### CLI
 
@@ -206,8 +209,13 @@ preview visible and displays an actionable error.
 
 ### Rendering and export
 
-Layout components render to SVG with bundled fonts. The same SVG is shown in
-the browser and passed through Resvg for PNG export.
+Layout components render to SVG with bundled fonts. Fontkit shapes display
+headlines into positioned glyph paths so preview and export preserve kerning,
+ligatures, and italic alternates. Satori lays out the complete composition. The
+same SVG is shown in the browser and passed through Resvg for PNG export.
+
+Photographic layouts are full bleed, so image sufficiency is checked against
+the complete 1080 × 1350 output region after cover crop and zoom.
 
 Instagram export writes numbered files such as `01-cover.png` at exactly
 1080 × 1350 pixels. Browser download packages them into a ZIP. CLI export
@@ -229,7 +237,8 @@ not file bytes or metadata.
 - Zod for runtime schemas and JSON Schema generation
 - YAML for documents
 - Chokidar for file watching
-- Satori and Resvg for SVG and PNG rendering
+- Fontkit for display-font shaping
+- Satori and Resvg for SVG layout and PNG rendering
 - PDF-lib and JSZip for export packaging
 - Sharp for image inspection
 - Vitest for unit and contract tests
@@ -268,8 +277,8 @@ one pnpm workspace.
 
 ## Risks
 
-- **Satori typography is insufficient:** prove font loading, wrapping, and all
-  three layouts in the first vertical slice before adding features.
+- **Typography loses editorial detail:** shape display headlines with Fontkit,
+  then pixel-test wrapping, emphasis, and all three layouts.
 - **YAML is difficult to discover:** generate JSON Schema, examples, and layout
   help from the same contracts.
 - **Layouts become one-offs:** add a layout only when the review corpus exposes

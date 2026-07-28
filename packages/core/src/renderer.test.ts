@@ -30,17 +30,22 @@ function pixelHash(image: { pixels: Buffer }): string {
   return createHash("sha256").update(image.pixels).digest("hex");
 }
 
-async function expectOpaqueGeometry(
+async function expectFullBleedGeometry(
   slide: Slide,
-  imagePoint: [number, number],
-  textPoint: [number, number],
-  expectedImage: [number, number, number],
-  expectedText: [number, number, number] = [238, 232, 220]
+  firstPoint: [number, number],
+  secondPoint: [number, number],
+  expectedFirst: [number, number, number],
+  expectedSecond: [number, number, number]
 ): Promise<{ pixels: Buffer; channels: number }> {
-  const svg = await renderSlideSvg(slide, { carouselFile, workspace });
+  const svg = await renderSlideSvg(slide, {
+    carouselFile,
+    workspace,
+    slideIndex: 0,
+    slideCount: 2
+  });
   const decoded = await raster(svg);
-  expect(pixel(decoded, ...imagePoint)).toEqual(expectedImage);
-  expect(pixel(decoded, ...textPoint)).toEqual(expectedText);
+  expect(pixel(decoded, ...firstPoint)).toEqual(expectedFirst);
+  expect(pixel(decoded, ...secondPoint)).toEqual(expectedSecond);
   return decoded;
 }
 
@@ -50,16 +55,16 @@ beforeAll(async () => {
   carouselFile = join(workspace, "carousels", "welcome", "carousel.yaml");
   await writeFile(
     join(workspace, "assets", "portrait.svg"),
-    `<svg xmlns="http://www.w3.org/2000/svg" width="2400" height="5400">
-      <rect width="2400" height="2700" fill="#b33b2e"/>
-      <rect y="2700" width="2400" height="2700" fill="#244b70"/>
+    `<svg xmlns="http://www.w3.org/2000/svg" width="3600" height="8100">
+      <rect width="3600" height="4050" fill="#b33b2e"/>
+      <rect y="4050" width="3600" height="4050" fill="#244b70"/>
     </svg>`
   );
   await writeFile(
     join(workspace, "assets", "landscape.svg"),
-    `<svg xmlns="http://www.w3.org/2000/svg" width="5400" height="3600">
-      <rect width="2700" height="3600" fill="#c28b2c"/>
-      <rect x="2700" width="2700" height="3600" fill="#315f45"/>
+    `<svg xmlns="http://www.w3.org/2000/svg" width="6750" height="4500">
+      <rect width="3375" height="4500" fill="#c28b2c"/>
+      <rect x="3375" width="3375" height="4500" fill="#315f45"/>
     </svg>`
   );
 });
@@ -70,7 +75,7 @@ afterAll(async () => {
 });
 
 describe("layout pixel regression", () => {
-  it("preserves authored headline lines, emphasis, folios, and deterministic texture", async () => {
+  it("preserves authored headline lines, descenders, emphasis, folios, and deterministic texture", async () => {
     const slide: Slide = {
       id: "authored",
       layout: "type_only",
@@ -85,9 +90,10 @@ describe("layout pixel regression", () => {
     const second = await renderSlideSvg(slide, context);
     expect(first).toBe(second);
     expect(first).toContain('data-headline-lines="2"');
+    expect(first).toContain('data-text-shaping="fontkit"');
     expect(first).toContain('data-emphasis-style="mark"');
     expect(first).toContain('data-folio-value="02 / 03"');
-    expect(pixelHash(await raster(first))).toMatchInlineSnapshot(`"62f939c884bd7712ef294d0d8d1b4998bcf021ef5811d8c12da6e4fddfdde25c"`);
+    expect(pixelHash(await raster(first))).toMatchInlineSnapshot(`"c89bd83f21880ca98ed81fbcc360e97a09a75591630349581f795effb6d68597"`);
   });
 
   it("scopes generated SVG resource IDs to each slide", async () => {
@@ -111,6 +117,44 @@ describe("layout pixel regression", () => {
     expect(firstIds.some((id) => secondIds.includes(id))).toBe(false);
   });
 
+  it("keeps emphasis aligned when astral characters precede it", async () => {
+    const svg = await renderSlideSvg({
+      id: "unicode-emphasis",
+      layout: "type_only",
+      content: {
+        headline: "👋 Context",
+        emphasis: "Context"
+      },
+      options: { align: "center", tone: "paper", emphasisStyle: "italic" }
+    });
+    expect(pixelHash(await raster(svg))).toMatchInlineSnapshot(`"520d8b4ba17d61871c67db81751120e81c369d1debf983db50e079303b7521c7"`);
+  });
+
+  it("preserves italic glyph overhangs at both horizontal line edges", async () => {
+    const left = await renderSlideSvg({
+      id: "left-overhang",
+      layout: "type_only",
+      content: { headline: "fine", emphasis: "f" },
+      options: { align: "left", tone: "paper", emphasisStyle: "italic" }
+    });
+    const right = await renderSlideSvg({
+      id: "right-overhang",
+      layout: "photo_split",
+      content: { headline: "proof", emphasis: "f" },
+      image: { src: "../../assets/landscape.svg", position: [0.5, 0.5], zoom: 1 },
+      options: { side: "left", tone: "ink", emphasisStyle: "italic" }
+    }, { carouselFile, workspace });
+    expect([
+      pixelHash(await raster(left)),
+      pixelHash(await raster(right))
+    ]).toMatchInlineSnapshot(`
+      [
+        "26684c14fd3217095202300d40b96e594bb81032365d1c21a7adf386e0098677",
+        "9f2b488a7eeba8ae75f570c9ffdeccece9f2a6e50a3fa8156de80bf7856f7302",
+      ]
+    `);
+  });
+
   it("wraps long tokens and reports field-specific overflow before returning a clipped slide", async () => {
     await expect(renderSlideSvg({
       id: "caption-wrap",
@@ -121,15 +165,15 @@ describe("layout pixel regression", () => {
     }, { carouselFile, workspace, slideIndex: 0 })).resolves.toContain("<svg");
 
     await expect(renderSlideSvg({
-      id: "headline-overflow",
+      id: "caption-overflow",
       layout: "photo_band",
-      content: { headline: "W".repeat(80), caption: "W".repeat(120) },
+      content: { headline: "A short headline", caption: "W".repeat(1000) },
       image: { src: "../../assets/landscape.svg", position: [0.5, 0.5], zoom: 1 },
       options: { tone: "paper", emphasisStyle: "italic" }
     }, { carouselFile, workspace, slideIndex: 1 })).rejects.toMatchObject({
       file: carouselFile,
-      yamlPath: "$.slides[1].content.headline",
-      message: "text overflow in content.headline"
+      yamlPath: "$.slides[1].content.caption",
+      message: "text overflow in content.caption"
     });
   });
 
@@ -150,23 +194,32 @@ describe("layout pixel regression", () => {
       },
       options: { align: "center", tone: "ink", emphasisStyle: "mark" }
     }));
-    expect(pixel(minimum, 0, 0)).toEqual([238, 232, 220]);
-    expect(pixel(maximum, 1079, 1349)).toEqual([32, 35, 31]);
+    expect(pixel(minimum, 0, 0)).toEqual([242, 240, 234]);
+    expect(pixel(maximum, 1079, 1349)).toEqual([13, 13, 12]);
     expect(minimum.pixels.equals(maximum.pixels)).toBe(false);
-    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"4ada3077f0be1bc6d50c89e3374d562353d18a5bcc369ff74b62dfdd60706c6a"`);
-    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"4fe3d078c398651083a2edbdc374da372dc5a332daccd4f9e119bfc38f010d1e"`);
+    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"b41846b381b8adef2f691c343b44a18c0c592eff15c8cd1de2ff66c16ff3b2f3"`);
+    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"1a16e81992bf71bb8d6acd18b97cdc0873d17c781eb495cda64546beaeddaafe"`);
   });
 
-  it("keeps photo_split copy on an asymmetric opaque region for both sides and copy limits", async () => {
-    const minimum = await expectOpaqueGeometry({
+  it("composes photo_split as full-bleed editorial photography for both sides and copy limits", async () => {
+    const minimumSlide: Slide = {
       id: "minimum",
       layout: "photo_split",
       content: { headline: "x" },
       image: { src: "../../assets/portrait.svg", position: [0, 0], zoom: 3 },
       options: { side: "left", tone: "paper", emphasisStyle: "italic" }
-    }, [100, 100], [900, 100], [179, 59, 46]);
+    };
+    expect(await renderSlideSvg(minimumSlide, { carouselFile, workspace }))
+      .toContain('data-headline-align="right"');
+    const minimum = await expectFullBleedGeometry(
+      minimumSlide,
+      [100, 100],
+      [900, 100],
+      [228, 200, 193],
+      [228, 200, 193]
+    );
 
-    const maximum = await expectOpaqueGeometry({
+    const maximumSlide: Slide = {
       id: "maximum",
       layout: "photo_split",
       content: {
@@ -175,21 +228,30 @@ describe("layout pixel regression", () => {
       },
       image: { src: "../../assets/portrait.svg", position: [1, 1], zoom: 3 },
       options: { side: "right", tone: "ink", emphasisStyle: "mark" }
-    }, [900, 100], [100, 100], [36, 75, 112], [32, 35, 31]);
-    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"65ae3f1c1cc8063603fec3ca3b5e50e9083036b437658172e5a01ca296d0b837"`);
-    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"da390b119aeabf5d35f7cc49f51be603ec06d1d4d7fd465781ab51d909c3b82e"`);
+    };
+    expect(await renderSlideSvg(maximumSlide, { carouselFile, workspace }))
+      .toContain('data-headline-align="left"');
+    const maximum = await expectFullBleedGeometry(
+      maximumSlide,
+      [900, 100],
+      [100, 100],
+      [14, 29, 43],
+      [14, 29, 43]
+    );
+    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"cecf3571024a753e82a882054c8ced664840a80ead54646ce7ec0559b02675ab"`);
+    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"6e84bebebabfa7253ee1ea53ae739fa3c16b47e31abf29bf3dae55e1d4e28afa"`);
   });
 
-  it("composes photo_band with an inset opaque surface at copy and focal limits", async () => {
-    const minimum = await expectOpaqueGeometry({
+  it("composes photo_band as centered full-bleed photography at copy and focal limits", async () => {
+    const minimum = await expectFullBleedGeometry({
       id: "minimum",
       layout: "photo_band",
       content: { headline: "x" },
       image: { src: "../../assets/landscape.svg", position: [0, 0], zoom: 1 },
       options: { tone: "paper", emphasisStyle: "italic" }
-    }, [100, 100], [950, 1150], [194, 139, 44], [238, 232, 220]);
+    }, [100, 100], [950, 1150], [232, 218, 193], [232, 218, 193]);
 
-    const maximum = await expectOpaqueGeometry({
+    const maximum = await expectFullBleedGeometry({
       id: "maximum",
       layout: "photo_band",
       content: {
@@ -198,8 +260,8 @@ describe("layout pixel regression", () => {
       },
       image: { src: "../../assets/landscape.svg", position: [1, 1], zoom: 3 },
       options: { tone: "ink", emphasisStyle: "mark" }
-    }, [900, 100], [950, 1150], [49, 95, 69], [32, 35, 31]);
-    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"65ac0627ff4bf0e5a776e133d344f03f5ee157374c66732ede9bccdf7e5c7f09"`);
-    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"fb648d1e36201f0437af356639b08bea4f95430df2785d903d11b6f8b44aa732"`);
+    }, [900, 100], [950, 1150], [19, 37, 27], [16, 31, 23]);
+    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"c8d280dadd475ed04da29a31b9fe632ac5e6cb18b2065f875036bbeb4e9562da"`);
+    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"bb6564bba131caf9dbcf80936be8f803bb83941e6e7a85a455c78800b7637249"`);
   });
 });

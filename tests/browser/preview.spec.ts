@@ -6,7 +6,7 @@ import { PDFDocument } from "pdf-lib";
 import sharp from "sharp";
 
 const carouselFile = resolve(".tmp/playwright-workspace/carousels/essential/carousel.yaml");
-const imageFile = resolve(".tmp/playwright-workspace/assets/sierra-nevada.jpg");
+const imageFile = resolve(".tmp/playwright-workspace/assets/person-at-laptop.png");
 
 const examples = [
   {
@@ -49,7 +49,7 @@ test("lists and previews every polished example at 4:5", async ({ page }) => {
     await document.fonts.ready;
     return {
       inter: document.fonts.check('400 16px "Inter"'),
-      serif: document.fonts.check('700 16px "Source Serif 4"')
+      serif: document.fonts.check('400 16px "Bodoni Moda"')
     };
   });
   expect(fontsLoaded).toEqual({ inter: true, serif: true });
@@ -94,7 +94,7 @@ test("keeps editorial previews readable at desktop and narrow viewports", async 
     );
     await expect(page.getByTestId("slide").nth(1).locator("svg")).toHaveAttribute(
       "data-emphasis-style",
-      "mark"
+      "italic"
     );
     const viewportFit = await page.evaluate(() => ({
       bodyWidth: document.body.scrollWidth,
@@ -111,17 +111,17 @@ test("keeps editorial previews readable at desktop and narrow viewports", async 
 
 test("referenced image changes refresh the photographic preview", async ({ page }) => {
   await page.goto("/?carousel=essential");
-  const photograph = page.getByTestId("slide").nth(1).locator("svg");
+  const photograph = page.getByTestId("slide").nth(3).locator("svg");
   const before = await photograph.innerHTML();
   const originalImage = await readFile(imageFile);
   const replacementImage = await sharp({
     create: {
-      width: 3840,
-      height: 2560,
+      width: 1080,
+      height: 1350,
       channels: 3,
       background: "#a44f38"
     }
-  }).jpeg().toBuffer();
+  }).png().toBuffer();
   try {
     await writeFile(imageFile, replacementImage);
     await expect.poll(async () => photograph.innerHTML()).not.toBe(before);
@@ -141,7 +141,7 @@ test("valid changes refresh and invalid content preserves the last valid preview
   await writeFile(carouselFile, valid);
   await expect(page.getByLabel("Slide 1: A valid live update. Context is not.")).toBeVisible();
 
-  await writeFile(carouselFile, valid.replace("align: left", "align: diagonal"));
+  await writeFile(carouselFile, valid.replace("align: center", "align: diagonal"));
   const alert = page.getByRole("alert");
   await expect(alert).toContainText("carousels/essential/carousel.yaml:$.slides[0].options.align");
   await expect(alert).toContainText('received: "diagonal"');

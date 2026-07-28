@@ -12,24 +12,21 @@ slides:
       emphasis: Context
       body: Execution keeps getting easier. The difficult part has moved somewhere less visible.
     options:
-      align: left
+      align: center
       tone: ink
       emphasisStyle: italic
   - id: upstream
-    layout: photo_band
+    layout: type_only
     content:
       headline: |-
         The bottleneck
         moved upstream.
       emphasis: upstream
-      caption: When output is abundant, deciding what deserves to exist becomes the work.
-    image:
-      src: ../../assets/sierra-nevada.jpg
-      position: [0.48, 0.44]
-      zoom: 1.15
+      body: When output is abundant, deciding what deserves to exist becomes the work.
     options:
+      align: center
       tone: paper
-      emphasisStyle: mark
+      emphasisStyle: italic
   - id: survives
     layout: type_only
     content:
@@ -40,7 +37,7 @@ slides:
       emphasis: survives
       body: Taste. Distribution. Trust. The judgment to know which problem is worth solving.
     options:
-      align: left
+      align: center
       tone: paper
       emphasisStyle: italic
   - id: wider-field
@@ -70,4 +67,4 @@ slides:
     options:
       align: center
       tone: paper
-      emphasisStyle: mark
+      emphasisStyle: italic
