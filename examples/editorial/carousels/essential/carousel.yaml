@@ -46,9 +46,9 @@ slides:
   - id: wider-field
     layout: photo_split
     image:
-      src: ../../assets/sea-cliff.jpg
-      position: [0.52, 0.48]
-      zoom: 1.1
+      src: ../../assets/person-at-laptop.png
+      position: [0.58, 0.5]
+      zoom: 1
     content:
       headline: |-
         Better tools
@@ -56,7 +56,7 @@ slides:
       emphasis: widen
       body: They do not remove the need for a point of view. They make its absence easier to see.
     options:
-      side: left
+      side: right
       tone: ink
       emphasisStyle: italic
   - id: close
