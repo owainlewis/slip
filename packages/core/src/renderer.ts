@@ -284,8 +284,24 @@ function shapedHeadlineLine(
   const scale = fontSize / displayFonts().normal.unitsPerEm;
   const width = shaped.reduce((total, segment) => total + segment.run.advanceWidth * scale, 0);
   const height = fontSize * lineHeight;
-  const metricHeight = (displayFonts().normal.ascent - displayFonts().normal.descent) * scale;
-  const baseline = (height - metricHeight) / 2 + displayFonts().normal.ascent * scale;
+  const ascent = Math.max(...shaped.map((segment) => segment.font.ascent)) * scale;
+  const descent = Math.min(...shaped.map((segment) => segment.font.descent)) * scale;
+  const metricHeight = ascent - descent;
+  const top = (height - metricHeight) / 2;
+  const underlineBottom = shaped.reduce(
+    (bottom, segment) =>
+      segment.underline
+        ? Math.max(
+            bottom,
+            ascent
+              - segment.font.underlinePosition * scale
+              + Math.max(1, segment.font.underlineThickness * scale)
+          )
+        : bottom,
+    metricHeight
+  );
+  const viewportHeight = Math.max(metricHeight, underlineBottom);
+  const baseline = ascent;
   let segmentX = textAlign === "center"
     ? (maxWidth - width) / 2
     : textAlign === "right"
@@ -326,14 +342,34 @@ function shapedHeadlineLine(
   });
 
   return {
-    type: "svg",
+    type: "div",
     key: `headline-line-${lineIndex}`,
     props: {
-      width: maxWidth,
-      height,
-      viewBox: `0 0 ${maxWidth} ${height}`,
-      style: { display: "block", width: maxWidth, height },
-      children
+      style: {
+        position: "relative",
+        display: "flex",
+        width: maxWidth,
+        height,
+        flexShrink: 0,
+        overflow: "visible"
+      },
+      children: {
+        type: "svg",
+        props: {
+          width: maxWidth,
+          height: viewportHeight,
+          viewBox: `0 0 ${maxWidth} ${viewportHeight}`,
+          style: {
+            position: "absolute",
+            top,
+            left: 0,
+            display: "block",
+            width: maxWidth,
+            height: viewportHeight
+          },
+          children
+        }
+      }
     }
   };
 }
