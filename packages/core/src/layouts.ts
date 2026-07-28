@@ -139,7 +139,7 @@ export const layoutDefinitions = [
   },
   {
     id: "photo_split",
-    summary: "A full-height photograph and overlapping opaque editorial surface.",
+    summary: "A full-height photograph beside an opaque editorial half.",
     schema: photoSplitSlideSchema,
     fields: [
       "content.headline  required, 1–80 characters",

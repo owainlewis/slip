@@ -147,7 +147,7 @@ schema version 1 documents.
 | Layout | Content | Image | Options | Geometry |
 | --- | --- | --- | --- | --- |
 | `type_only` | `headline` required, 1–100 chars; `emphasis` optional exact phrase, 1–48 chars; `body` optional, 1–260 chars; `eyebrow` optional, 1–40 chars | Not allowed | `align`: `left` or `center`; `tone`: `paper` or `ink`; `emphasisStyle`: `italic` or `mark` | Oversized type on a tactile paper or ink canvas |
-| `photo_split` | `headline` required, 1–80 chars; `emphasis` optional exact phrase, 1–48 chars; `body` optional, 1–220 chars | Required | `side`: `left` or `right`; shared tone and emphasis options | Full-height 65% crop with an offset opaque text surface that overlaps the image |
+| `photo_split` | `headline` required, 1–80 chars; `emphasis` optional exact phrase, 1–48 chars; `body` optional, 1–220 chars | Required | `side`: `left` or `right`; shared tone and emphasis options | Flush 50/50 composition with a full-height crop beside an opaque text half |
 | `photo_band` | `headline` required, 1–80 chars; `emphasis` optional exact phrase, 1–48 chars; `caption` optional, 1–120 chars | Required | Shared tone and emphasis options | Wide crop with an asymmetric inset opaque text surface |
 
 All layouts use fixed regions, type styles, spacing, and safe areas. Text

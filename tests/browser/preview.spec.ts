@@ -6,7 +6,7 @@ import { PDFDocument } from "pdf-lib";
 import sharp from "sharp";
 
 const carouselFile = resolve(".tmp/playwright-workspace/carousels/essential/carousel.yaml");
-const imageFile = resolve(".tmp/playwright-workspace/assets/sierra-nevada.jpg");
+const imageFile = resolve(".tmp/playwright-workspace/assets/person-at-laptop.png");
 
 const examples = [
   {
@@ -111,17 +111,17 @@ test("keeps editorial previews readable at desktop and narrow viewports", async 
 
 test("referenced image changes refresh the photographic preview", async ({ page }) => {
   await page.goto("/?carousel=essential");
-  const photograph = page.getByTestId("slide").nth(1).locator("svg");
+  const photograph = page.getByTestId("slide").nth(3).locator("svg");
   const before = await photograph.innerHTML();
   const originalImage = await readFile(imageFile);
   const replacementImage = await sharp({
     create: {
-      width: 3840,
-      height: 2560,
+      width: 1080,
+      height: 1350,
       channels: 3,
       background: "#a44f38"
     }
-  }).jpeg().toBuffer();
+  }).png().toBuffer();
   try {
     await writeFile(imageFile, replacementImage);
     await expect.poll(async () => photograph.innerHTML()).not.toBe(before);

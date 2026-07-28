@@ -157,7 +157,7 @@ describe("layout pixel regression", () => {
     expect(pixelHash(maximum)).toMatchInlineSnapshot(`"4fe3d078c398651083a2edbdc374da372dc5a332daccd4f9e119bfc38f010d1e"`);
   });
 
-  it("keeps photo_split copy on an asymmetric opaque region for both sides and copy limits", async () => {
+  it("keeps photo_split copy on a flush opaque half for both sides and copy limits", async () => {
     const minimum = await expectOpaqueGeometry({
       id: "minimum",
       layout: "photo_split",
@@ -176,8 +176,8 @@ describe("layout pixel regression", () => {
       image: { src: "../../assets/portrait.svg", position: [1, 1], zoom: 3 },
       options: { side: "right", tone: "ink", emphasisStyle: "mark" }
     }, [900, 100], [100, 100], [36, 75, 112], [32, 35, 31]);
-    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"65ae3f1c1cc8063603fec3ca3b5e50e9083036b437658172e5a01ca296d0b837"`);
-    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"da390b119aeabf5d35f7cc49f51be603ec06d1d4d7fd465781ab51d909c3b82e"`);
+    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"19995396c4d9a073ad6ace34eb753cf71e774147557b001d52954984beb32a13"`);
+    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"88280e41091cac585087970dad4b694b6d185bb4d0c87f64ad005c36cec7f2e5"`);
   });
 
   it("composes photo_band with an inset opaque surface at copy and focal limits", async () => {

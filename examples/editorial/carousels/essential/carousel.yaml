@@ -16,18 +16,15 @@ slides:
       tone: ink
       emphasisStyle: italic
   - id: upstream
-    layout: photo_band
+    layout: type_only
     content:
       headline: |-
         The bottleneck
         moved upstream.
       emphasis: upstream
-      caption: When output is abundant, deciding what deserves to exist becomes the work.
-    image:
-      src: ../../assets/sierra-nevada.jpg
-      position: [0.48, 0.44]
-      zoom: 1.15
+      body: When output is abundant, deciding what deserves to exist becomes the work.
     options:
+      align: left
       tone: paper
       emphasisStyle: mark
   - id: survives
