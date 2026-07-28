@@ -41,20 +41,20 @@ export interface RenderContext {
 
 const palettes = {
   paper: {
-    background: "#eee8dc",
-    ink: "#211f1b",
-    muted: "#625d53",
-    accent: "#9f4f38",
-    marked: "#d8df7a",
-    markedInk: "#211f1b"
+    background: "#f2f0ea",
+    ink: "#11110f",
+    muted: "#575650",
+    accent: "#11110f",
+    marked: "#11110f",
+    markedInk: "#11110f"
   },
   ink: {
-    background: "#20231f",
-    ink: "#f1eadc",
-    muted: "#c6bdad",
-    accent: "#d8df7a",
-    marked: "#d8df7a",
-    markedInk: "#20231f"
+    background: "#0d0d0c",
+    ink: "#f4f2ed",
+    muted: "#c7c5bf",
+    accent: "#f4f2ed",
+    marked: "#f4f2ed",
+    markedInk: "#0d0d0c"
   }
 } as const;
 
@@ -170,11 +170,13 @@ function headlineLineChildren(
         color: palette.ink,
         textDecorationLine: "underline",
         textDecorationStyle: "solid",
-        textDecorationColor: palette.marked
+        textDecorationColor: palette.marked,
+        textDecorationThickness: "1px",
+        textUnderlineOffset: "0.08em"
       }
     : {
         fontStyle: "italic",
-        color: palette.accent
+        color: palette.ink
       };
   return [
     line.slice(0, index),
@@ -198,6 +200,12 @@ function headline(
   style: Record<string, unknown>
 ): Element {
   let emphasisRendered = false;
+  const textAlign = style.textAlign;
+  const justifyContent = textAlign === "center"
+    ? "center"
+    : textAlign === "right"
+      ? "flex-end"
+      : "flex-start";
   return {
     type: "div",
     key: "field:content.headline",
@@ -226,7 +234,7 @@ function headline(
               display: "flex",
               flexWrap: "wrap",
               whiteSpace: "pre-wrap",
-              justifyContent: style.textAlign === "center" ? "center" : "flex-start"
+              justifyContent
             },
             children: headlineLineChildren(line, lineEmphasis, emphasisStyle, tone)
           }
@@ -252,7 +260,7 @@ function typeOnly(slide: TypeOnlySlide, context?: RenderContext): Element {
         justifyContent: "center",
         alignItems: centered ? "center" : "flex-start",
         overflow: "hidden",
-        padding: centered ? "120px 88px 154px" : "116px 86px 150px",
+        padding: centered ? "150px 92px 164px" : "146px 96px 164px",
         background: palette.background,
         color: palette.ink,
         textAlign: centered ? "center" : "left"
@@ -268,8 +276,7 @@ function typeOnly(slide: TypeOnlySlide, context?: RenderContext): Element {
               flexDirection: "column",
               alignItems: centered ? "center" : "flex-start",
               width: "100%",
-              maxWidth: centered ? 900 : 920,
-              marginTop: centered ? -24 : 48
+              maxWidth: centered ? 884 : 860
             },
             children: [
               slide.content.eyebrow
@@ -280,12 +287,12 @@ function typeOnly(slide: TypeOnlySlide, context?: RenderContext): Element {
                       "data-field": "content.eyebrow",
                       style: {
                         fontFamily: "Inter",
-                        fontSize: 21,
-                        fontWeight: 600,
+                        fontSize: 17,
+                        fontWeight: 400,
                         lineHeight: 1.2,
-                        letterSpacing: "0.18em",
-                        color: palette.accent,
-                        marginBottom: 52,
+                        letterSpacing: "0.24em",
+                        color: palette.muted,
+                        marginBottom: 64,
                         whiteSpace: "pre-wrap",
                         wordBreak: "break-word"
                       },
@@ -294,10 +301,10 @@ function typeOnly(slide: TypeOnlySlide, context?: RenderContext): Element {
                   }
                 : null,
               headline(slide.content, tone, emphasisStyle, {
-                fontSize: centered ? 96 : 104,
-                lineHeight: 0.94,
-                letterSpacing: "-0.038em",
-                maxWidth: centered ? 900 : 920,
+                fontSize: centered ? 88 : 86,
+                lineHeight: 0.98,
+                letterSpacing: "-0.035em",
+                maxWidth: centered ? 884 : 860,
                 textAlign: centered ? "center" : "left"
               }),
               slide.content.body
@@ -308,10 +315,10 @@ function typeOnly(slide: TypeOnlySlide, context?: RenderContext): Element {
                       "data-field": "content.body",
                       style: {
                         fontFamily: "Inter",
-                        fontSize: 29,
-                        lineHeight: 1.48,
-                        maxWidth: centered ? 760 : 730,
-                        marginTop: 54,
+                        fontSize: 27,
+                        lineHeight: 1.5,
+                        maxWidth: centered ? 780 : 700,
+                        marginTop: 58,
                         color: palette.muted,
                         whiteSpace: "pre-wrap",
                         wordBreak: "break-word"
@@ -328,10 +335,10 @@ function typeOnly(slide: TypeOnlySlide, context?: RenderContext): Element {
           props: {
             style: {
               position: "absolute",
-              bottom: 62,
+              bottom: 56,
               display: "flex",
               justifyContent: centered ? "center" : "flex-end",
-              ...(centered ? { left: 0, right: 0 } : { right: 86 })
+              ...(centered ? { left: 0, right: 0 } : { right: 96 })
             },
             children: folio(context, tone)
           }
@@ -344,109 +351,10 @@ function typeOnly(slide: TypeOnlySlide, context?: RenderContext): Element {
 function photoSplit(slide: PhotoSplitSlide, image: string, context: RenderContext): Element {
   const { side, tone, emphasisStyle } = slide.options;
   const palette = palettes[tone];
-  const photographLeft = side === "left" ? 0 : 540;
-  const surfaceLeft = side === "left" ? 540 : 0;
-  return {
-    type: "div",
-    props: {
-      style: {
-        position: "relative",
-        width: "100%",
-        height: "100%",
-        display: "flex",
-        overflow: "hidden",
-        background: palette.background,
-        color: palette.ink
-      },
-      children: [
-        {
-          type: "img",
-          props: {
-            src: image,
-            width: 540,
-            height: 1350,
-            style: {
-              position: "absolute",
-              left: photographLeft,
-              top: 0,
-              width: 540,
-              height: 1350,
-              objectFit: "fill"
-            }
-          }
-        },
-        {
-          type: "div",
-          props: {
-            style: {
-              position: "absolute",
-              left: surfaceLeft,
-              top: 0,
-              width: 540,
-              height: 1350,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "space-between",
-              overflow: "hidden",
-              padding: "104px 64px 64px",
-              background: palette.background
-            },
-            children: [
-              paperTexture(),
-              {
-                type: "div",
-                props: {
-                  style: {
-                    position: "relative",
-                    display: "flex",
-                    flexDirection: "column"
-                  },
-                  children: [
-                    headline(slide.content, tone, emphasisStyle, {
-                      fontSize: 66,
-                      lineHeight: 0.96,
-                      letterSpacing: "-0.035em"
-                    }),
-                    slide.content.body
-                      ? {
-                          type: "div",
-                          key: "field:content.body",
-                          props: {
-                            "data-field": "content.body",
-                            style: {
-                              fontFamily: "Inter",
-                              fontSize: 25,
-                              lineHeight: 1.46,
-                              marginTop: 42,
-                              color: palette.muted,
-                              whiteSpace: "pre-wrap",
-                              wordBreak: "break-word"
-                            },
-                            children: slide.content.body
-                          }
-                        }
-                      : null
-                  ]
-                }
-              },
-              {
-                type: "div",
-                props: {
-                  style: { position: "relative", display: "flex" },
-                  children: folio(context, tone)
-                }
-              }
-            ]
-          }
-        }
-      ]
-    }
-  };
-}
-
-function photoBand(slide: PhotoBandSlide, image: string, context: RenderContext): Element {
-  const { tone, emphasisStyle } = slide.options;
-  const palette = palettes[tone];
+  const alignRight = side === "left";
+  const overlay = tone === "ink"
+    ? { background: "#000000", opacity: 0.25 }
+    : { background: palette.background, opacity: 0.78 };
   return {
     type: "div",
     props: {
@@ -465,13 +373,13 @@ function photoBand(slide: PhotoBandSlide, image: string, context: RenderContext)
           props: {
             src: image,
             width: 1080,
-            height: 820,
+            height: 1350,
             style: {
               position: "absolute",
               left: 0,
               top: 0,
               width: 1080,
-              height: 820,
+              height: 1350,
               objectFit: "fill"
             }
           }
@@ -481,59 +389,70 @@ function photoBand(slide: PhotoBandSlide, image: string, context: RenderContext)
           props: {
             style: {
               position: "absolute",
-              top: 654,
-              right: 68,
-              width: 862,
-              height: 594,
+              left: 0,
+              top: 0,
+              width: 1080,
+              height: 1350,
+              ...overlay
+            }
+          }
+        },
+        {
+          type: "div",
+          props: {
+            style: {
+              position: "relative",
+              width: "100%",
+              height: "100%",
               display: "flex",
               flexDirection: "column",
+              justifyContent: "center",
+              alignItems: alignRight ? "flex-end" : "flex-start",
               overflow: "hidden",
-              padding: "58px 60px 50px",
-              background: palette.background
+              padding: "146px 86px 168px",
+              color: palette.ink,
+              textAlign: alignRight ? "right" : "left"
             },
-            children: [
-              paperTexture(),
-              {
-                type: "div",
-                props: {
-                  style: {
-                    position: "relative",
-                    display: "flex",
-                    alignItems: "flex-start",
-                    width: "100%"
-                  },
-                  children: [
-                    headline(slide.content, tone, emphasisStyle, {
-                      width: slide.content.caption ? 500 : 742,
-                      fontSize: 64,
-                      lineHeight: 0.96,
-                      letterSpacing: "-0.035em"
-                    }),
-                    slide.content.caption
-                      ? {
-                          type: "div",
-                          key: "field:content.caption",
-                          props: {
-                            "data-field": "content.caption",
-                            style: {
-                              width: 210,
-                              marginLeft: "auto",
-                              paddingTop: 6,
-                              fontFamily: "Inter",
-                              fontSize: 22,
-                              lineHeight: 1.45,
-                              color: palette.muted,
-                              whiteSpace: "pre-wrap",
-                              wordBreak: "break-word"
-                            },
-                            children: slide.content.caption
-                          }
+            children: {
+              type: "div",
+              props: {
+                style: {
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: alignRight ? "flex-end" : "flex-start",
+                  width: 820
+                },
+                children: [
+                  headline(slide.content, tone, emphasisStyle, {
+                    width: 820,
+                    fontSize: 84,
+                    lineHeight: 0.98,
+                    letterSpacing: "-0.038em",
+                    textAlign: alignRight ? "right" : "left"
+                  }),
+                  slide.content.body
+                    ? {
+                        type: "div",
+                        key: "field:content.body",
+                        props: {
+                          "data-field": "content.body",
+                          style: {
+                            width: 650,
+                            marginTop: 52,
+                            fontFamily: "Inter",
+                            fontSize: 27,
+                            lineHeight: 1.5,
+                            color: palette.ink,
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word"
+                          },
+                          children: slide.content.body
                         }
-                      : null
-                  ]
-                }
+                      }
+                    : null
+                ]
               }
-            ]
+            }
           }
         },
         {
@@ -541,9 +460,136 @@ function photoBand(slide: PhotoBandSlide, image: string, context: RenderContext)
           props: {
             style: {
               position: "absolute",
-              left: 68,
-              bottom: 48,
-              display: "flex"
+              left: 0,
+              right: 0,
+              bottom: 56,
+              display: "flex",
+              justifyContent: "center"
+            },
+            children: folio(context, tone)
+          }
+        }
+      ]
+    }
+  };
+}
+
+function photoBand(slide: PhotoBandSlide, image: string, context: RenderContext): Element {
+  const { tone, emphasisStyle } = slide.options;
+  const palette = palettes[tone];
+  const overlay = tone === "ink"
+    ? { background: "#000000", opacity: 0.32 }
+    : { background: palette.background, opacity: 0.78 };
+  return {
+    type: "div",
+    props: {
+      style: {
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        overflow: "hidden",
+        background: palette.background,
+        color: palette.ink
+      },
+      children: [
+        {
+          type: "img",
+          props: {
+            src: image,
+            width: 1080,
+            height: 1350,
+            style: {
+              position: "absolute",
+              left: 0,
+              top: 0,
+              width: 1080,
+              height: 1350,
+              objectFit: "fill"
+            }
+          }
+        },
+        {
+          type: "div",
+          props: {
+            style: {
+              position: "absolute",
+              left: 0,
+              top: 0,
+              width: 1080,
+              height: 1350,
+              ...overlay
+            }
+          }
+        },
+        {
+          type: "div",
+          props: {
+            style: {
+              position: "relative",
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              overflow: "hidden",
+              padding: "146px 88px 168px",
+              color: palette.ink,
+              textAlign: "center"
+            },
+            children: {
+              type: "div",
+              props: {
+                style: {
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  width: 870
+                },
+                children: [
+                  headline(slide.content, tone, emphasisStyle, {
+                    width: 870,
+                    fontSize: 84,
+                    lineHeight: 0.98,
+                    letterSpacing: "-0.038em",
+                    textAlign: "center"
+                  }),
+                  slide.content.caption
+                    ? {
+                        type: "div",
+                        key: "field:content.caption",
+                        props: {
+                          "data-field": "content.caption",
+                          style: {
+                            width: 700,
+                            marginTop: 52,
+                            fontFamily: "Inter",
+                            fontSize: 27,
+                            lineHeight: 1.5,
+                            color: palette.ink,
+                            whiteSpace: "pre-wrap",
+                            wordBreak: "break-word"
+                          },
+                          children: slide.content.caption
+                        }
+                      }
+                    : null
+                ]
+              }
+            }
+          }
+        },
+        {
+          type: "div",
+          props: {
+            style: {
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 56,
+              display: "flex",
+              justifyContent: "center"
             },
             children: folio(context, tone)
           }
@@ -581,8 +627,14 @@ function scopeSvgIds(svg: string, slideId: string): string {
 }
 
 function annotateSvg(svg: string, slide: Slide, context?: RenderContext): string {
+  const headlineAlign = slide.layout === "type_only"
+    ? slide.options.align
+    : slide.layout === "photo_split"
+      ? slide.options.side === "left" ? "right" : "left"
+      : "center";
   const attributes = [
     `data-headline-lines="${slide.content.headline.split("\n").length}"`,
+    `data-headline-align="${headlineAlign}"`,
     slide.content.emphasis ? `data-emphasis-style="${slide.options.emphasisStyle}"` : undefined,
     context?.slideIndex !== undefined && context.slideCount !== undefined
       ? `data-folio-value="${String(context.slideIndex + 1).padStart(2, "0")} / ${String(

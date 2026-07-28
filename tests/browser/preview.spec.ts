@@ -94,7 +94,7 @@ test("keeps editorial previews readable at desktop and narrow viewports", async 
     );
     await expect(page.getByTestId("slide").nth(1).locator("svg")).toHaveAttribute(
       "data-emphasis-style",
-      "mark"
+      "italic"
     );
     const viewportFit = await page.evaluate(() => ({
       bodyWidth: document.body.scrollWidth,
@@ -141,7 +141,7 @@ test("valid changes refresh and invalid content preserves the last valid preview
   await writeFile(carouselFile, valid);
   await expect(page.getByLabel("Slide 1: A valid live update. Context is not.")).toBeVisible();
 
-  await writeFile(carouselFile, valid.replace("align: left", "align: diagonal"));
+  await writeFile(carouselFile, valid.replace("align: center", "align: diagonal"));
   const alert = page.getByRole("alert");
   await expect(alert).toContainText("carousels/essential/carousel.yaml:$.slides[0].options.align");
   await expect(alert).toContainText('received: "diagonal"');

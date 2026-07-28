@@ -147,13 +147,13 @@ schema version 1 documents.
 | Layout | Content | Image | Options | Geometry |
 | --- | --- | --- | --- | --- |
 | `type_only` | `headline` required, 1–100 chars; `emphasis` optional exact phrase, 1–48 chars; `body` optional, 1–260 chars; `eyebrow` optional, 1–40 chars | Not allowed | `align`: `left` or `center`; `tone`: `paper` or `ink`; `emphasisStyle`: `italic` or `mark` | Oversized type on a tactile paper or ink canvas |
-| `photo_split` | `headline` required, 1–80 chars; `emphasis` optional exact phrase, 1–48 chars; `body` optional, 1–220 chars | Required | `side`: `left` or `right`; shared tone and emphasis options | Flush 50/50 composition with a full-height crop beside an opaque text half |
-| `photo_band` | `headline` required, 1–80 chars; `emphasis` optional exact phrase, 1–48 chars; `caption` optional, 1–120 chars | Required | Shared tone and emphasis options | Wide crop with an asymmetric inset opaque text surface |
+| `photo_split` | `headline` required, 1–80 chars; `emphasis` optional exact phrase, 1–48 chars; `body` optional, 1–220 chars | Required | `side`: `left` or `right`; shared tone and emphasis options | Full-bleed crop with editorial copy anchored opposite the focal subject |
+| `photo_band` | `headline` required, 1–80 chars; `emphasis` optional exact phrase, 1–48 chars; `caption` optional, 1–120 chars | Required | Shared tone and emphasis options | Full-bleed crop with centered editorial copy |
 
 All layouts use fixed regions, type styles, spacing, and safe areas. Text
-surfaces remain fully opaque even where they overlap photography. Overflow is
-an export-blocking validation error rather than triggering auto-shrink or
-truncation.
+over photography remains legible through a restrained uniform darkening layer.
+Overflow is an export-blocking validation error rather than triggering
+auto-shrink or truncation.
 
 Changing a layout is a manual YAML edit. Compatible field migration is outside
 the MVP.
@@ -163,10 +163,10 @@ the MVP.
 The single editorial system uses:
 
 - 1080 × 1350 pixel canvas;
-- warm paper, near-black ink, quiet supporting tones, and one restrained accent;
+- warm paper, near-black ink, and quiet supporting tones without decorative colour;
 - bundled regular and italic editorial serif faces with a neutral sans-serif;
 - authored headline line breaks and explicit phrase emphasis;
-- asymmetric crops, offset opaque text surfaces, and purposeful whitespace;
+- centered typographic compositions, full-bleed crops, and purposeful whitespace;
 - fixed, deterministic paper texture shared by preview, PNG, and PDF rendering;
 - quiet context-driven folios such as `01 / 05`;
 - square corners and no repeated brand footer.

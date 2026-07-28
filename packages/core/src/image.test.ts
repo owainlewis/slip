@@ -60,7 +60,7 @@ describe("image framing", () => {
     expect(lowerRight.height).toBe(1000);
   });
 
-  it("keeps schema-v1 540×1350 photo_split sources valid for the flush composition", async () => {
+  it("keeps schema-v1 540×1350 photo_split sources valid for full-bleed output", async () => {
     const { root, carousel } = await workspace();
     const asset = join(root, "assets", "legacy-split.svg");
     await writeFile(
@@ -76,7 +76,7 @@ describe("image framing", () => {
 
     const dataUri = await renderSlideImage(slide, carousel, root);
     const rendered = await sharp(Buffer.from(dataUri.split(",")[1]!, "base64")).metadata();
-    expect(rendered).toMatchObject({ format: "png", width: 540, height: 1350 });
+    expect(rendered).toMatchObject({ format: "png", width: 1080, height: 1350 });
 
     await writeFile(carousel, document("../../assets/legacy-split.svg", 1.01, "photo_split"));
     await expect(readCarousel(carousel, root)).rejects.toMatchObject({

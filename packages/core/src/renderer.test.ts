@@ -30,17 +30,17 @@ function pixelHash(image: { pixels: Buffer }): string {
   return createHash("sha256").update(image.pixels).digest("hex");
 }
 
-async function expectOpaqueGeometry(
+async function expectFullBleedGeometry(
   slide: Slide,
-  imagePoint: [number, number],
-  textPoint: [number, number],
-  expectedImage: [number, number, number],
-  expectedText: [number, number, number] = [238, 232, 220]
+  firstPoint: [number, number],
+  secondPoint: [number, number],
+  expectedFirst: [number, number, number],
+  expectedSecond: [number, number, number]
 ): Promise<{ pixels: Buffer; channels: number }> {
   const svg = await renderSlideSvg(slide, { carouselFile, workspace });
   const decoded = await raster(svg);
-  expect(pixel(decoded, ...imagePoint)).toEqual(expectedImage);
-  expect(pixel(decoded, ...textPoint)).toEqual(expectedText);
+  expect(pixel(decoded, ...firstPoint)).toEqual(expectedFirst);
+  expect(pixel(decoded, ...secondPoint)).toEqual(expectedSecond);
   return decoded;
 }
 
@@ -87,7 +87,7 @@ describe("layout pixel regression", () => {
     expect(first).toContain('data-headline-lines="2"');
     expect(first).toContain('data-emphasis-style="mark"');
     expect(first).toContain('data-folio-value="02 / 03"');
-    expect(pixelHash(await raster(first))).toMatchInlineSnapshot(`"62f939c884bd7712ef294d0d8d1b4998bcf021ef5811d8c12da6e4fddfdde25c"`);
+    expect(pixelHash(await raster(first))).toMatchInlineSnapshot(`"08c500b3b5ce8fbe833ecbf4589da0b6dcb22fec2c3f152359c53686a593e5fa"`);
   });
 
   it("scopes generated SVG resource IDs to each slide", async () => {
@@ -121,15 +121,15 @@ describe("layout pixel regression", () => {
     }, { carouselFile, workspace, slideIndex: 0 })).resolves.toContain("<svg");
 
     await expect(renderSlideSvg({
-      id: "headline-overflow",
+      id: "caption-overflow",
       layout: "photo_band",
-      content: { headline: "W".repeat(80), caption: "W".repeat(120) },
+      content: { headline: "A short headline", caption: "W".repeat(1000) },
       image: { src: "../../assets/landscape.svg", position: [0.5, 0.5], zoom: 1 },
       options: { tone: "paper", emphasisStyle: "italic" }
     }, { carouselFile, workspace, slideIndex: 1 })).rejects.toMatchObject({
       file: carouselFile,
-      yamlPath: "$.slides[1].content.headline",
-      message: "text overflow in content.headline"
+      yamlPath: "$.slides[1].content.caption",
+      message: "text overflow in content.caption"
     });
   });
 
@@ -150,23 +150,32 @@ describe("layout pixel regression", () => {
       },
       options: { align: "center", tone: "ink", emphasisStyle: "mark" }
     }));
-    expect(pixel(minimum, 0, 0)).toEqual([238, 232, 220]);
-    expect(pixel(maximum, 1079, 1349)).toEqual([32, 35, 31]);
+    expect(pixel(minimum, 0, 0)).toEqual([242, 240, 234]);
+    expect(pixel(maximum, 1079, 1349)).toEqual([13, 13, 12]);
     expect(minimum.pixels.equals(maximum.pixels)).toBe(false);
-    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"4ada3077f0be1bc6d50c89e3374d562353d18a5bcc369ff74b62dfdd60706c6a"`);
-    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"4fe3d078c398651083a2edbdc374da372dc5a332daccd4f9e119bfc38f010d1e"`);
+    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"dabc4794bd273293a176e67a97eb6ee452cb2fa628a4ce6275e922a024d6ec9d"`);
+    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"3c5154e3bb241f5d796501ec460565979c6764329905077f7b2f9a6aa047e7a1"`);
   });
 
-  it("keeps photo_split copy on a flush opaque half for both sides and copy limits", async () => {
-    const minimum = await expectOpaqueGeometry({
+  it("composes photo_split as full-bleed editorial photography for both sides and copy limits", async () => {
+    const minimumSlide: Slide = {
       id: "minimum",
       layout: "photo_split",
       content: { headline: "x" },
       image: { src: "../../assets/portrait.svg", position: [0, 0], zoom: 3 },
       options: { side: "left", tone: "paper", emphasisStyle: "italic" }
-    }, [100, 100], [900, 100], [179, 59, 46]);
+    };
+    expect(await renderSlideSvg(minimumSlide, { carouselFile, workspace }))
+      .toContain('data-headline-align="right"');
+    const minimum = await expectFullBleedGeometry(
+      minimumSlide,
+      [100, 100],
+      [900, 100],
+      [228, 200, 193],
+      [228, 200, 193]
+    );
 
-    const maximum = await expectOpaqueGeometry({
+    const maximumSlide: Slide = {
       id: "maximum",
       layout: "photo_split",
       content: {
@@ -175,21 +184,30 @@ describe("layout pixel regression", () => {
       },
       image: { src: "../../assets/portrait.svg", position: [1, 1], zoom: 3 },
       options: { side: "right", tone: "ink", emphasisStyle: "mark" }
-    }, [900, 100], [100, 100], [36, 75, 112], [32, 35, 31]);
-    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"19995396c4d9a073ad6ace34eb753cf71e774147557b001d52954984beb32a13"`);
-    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"88280e41091cac585087970dad4b694b6d185bb4d0c87f64ad005c36cec7f2e5"`);
+    };
+    expect(await renderSlideSvg(maximumSlide, { carouselFile, workspace }))
+      .toContain('data-headline-align="left"');
+    const maximum = await expectFullBleedGeometry(
+      maximumSlide,
+      [900, 100],
+      [100, 100],
+      [27, 56, 84],
+      [27, 56, 84]
+    );
+    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"427b211afc694ac8c599d0e37dd5845e80fdd35804c40cc545f3aa77d29b5c37"`);
+    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"37afdbb8ab9de4835d776ac57c70f54b71a1b5c473bdd7c1291f41b24430a5fe"`);
   });
 
-  it("composes photo_band with an inset opaque surface at copy and focal limits", async () => {
-    const minimum = await expectOpaqueGeometry({
+  it("composes photo_band as centered full-bleed photography at copy and focal limits", async () => {
+    const minimum = await expectFullBleedGeometry({
       id: "minimum",
       layout: "photo_band",
       content: { headline: "x" },
       image: { src: "../../assets/landscape.svg", position: [0, 0], zoom: 1 },
       options: { tone: "paper", emphasisStyle: "italic" }
-    }, [100, 100], [950, 1150], [194, 139, 44], [238, 232, 220]);
+    }, [100, 100], [950, 1150], [232, 218, 193], [232, 218, 193]);
 
-    const maximum = await expectOpaqueGeometry({
+    const maximum = await expectFullBleedGeometry({
       id: "maximum",
       layout: "photo_band",
       content: {
@@ -198,8 +216,8 @@ describe("layout pixel regression", () => {
       },
       image: { src: "../../assets/landscape.svg", position: [1, 1], zoom: 3 },
       options: { tone: "ink", emphasisStyle: "mark" }
-    }, [900, 100], [950, 1150], [49, 95, 69], [32, 35, 31]);
-    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"65ac0627ff4bf0e5a776e133d344f03f5ee157374c66732ede9bccdf7e5c7f09"`);
-    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"fb648d1e36201f0437af356639b08bea4f95430df2785d903d11b6f8b44aa732"`);
+    }, [900, 100], [950, 1150], [33, 65, 47], [33, 65, 47]);
+    expect(pixelHash(minimum)).toMatchInlineSnapshot(`"1807be4d8162ab4ae16ea761af6651c93477b61ee4dcdb9a856407300138098b"`);
+    expect(pixelHash(maximum)).toMatchInlineSnapshot(`"35f9179ae49315d6d40f769354b6eaa04553300c35443390e9c23180df0d0b69"`);
   });
 });

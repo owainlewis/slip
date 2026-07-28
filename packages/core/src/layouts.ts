@@ -139,7 +139,7 @@ export const layoutDefinitions = [
   },
   {
     id: "photo_split",
-    summary: "A full-height photograph beside an opaque editorial half.",
+    summary: "Full-bleed photography with editorial copy anchored away from the focal subject.",
     schema: photoSplitSlideSchema,
     fields: [
       "content.headline  required, 1–80 characters",
@@ -157,7 +157,7 @@ export const layoutDefinitions = [
   content:
     headline: Make the subject part of the argument
     emphasis: subject
-    body: The text remains on an opaque theme-colour region.
+    body: Restrained contrast keeps the editorial copy readable over the photograph.
   image:
     src: ../../assets/portrait.jpg
     position: [0.62, 0.44]
@@ -169,7 +169,7 @@ export const layoutDefinitions = [
   },
   {
     id: "photo_band",
-    summary: "A wide photographic crop composed with an inset opaque text surface.",
+    summary: "Full-bleed photography with centered editorial copy.",
     schema: photoBandSlideSchema,
     fields: [
       "content.headline  required, 1–80 characters",
