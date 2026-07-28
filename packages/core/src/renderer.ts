@@ -344,8 +344,8 @@ function typeOnly(slide: TypeOnlySlide, context?: RenderContext): Element {
 function photoSplit(slide: PhotoSplitSlide, image: string, context: RenderContext): Element {
   const { side, tone, emphasisStyle } = slide.options;
   const palette = palettes[tone];
-  const photographLeft = side === "left" ? 0 : 378;
-  const surfaceLeft = side === "left" ? 493 : 62;
+  const photographLeft = side === "left" ? 0 : 540;
+  const surfaceLeft = side === "left" ? 540 : 0;
   return {
     type: "div",
     props: {
@@ -363,13 +363,13 @@ function photoSplit(slide: PhotoSplitSlide, image: string, context: RenderContex
           type: "img",
           props: {
             src: image,
-            width: 702,
+            width: 540,
             height: 1350,
             style: {
               position: "absolute",
               left: photographLeft,
               top: 0,
-              width: 702,
+              width: 540,
               height: 1350,
               objectFit: "fill"
             }
@@ -381,14 +381,14 @@ function photoSplit(slide: PhotoSplitSlide, image: string, context: RenderContex
             style: {
               position: "absolute",
               left: surfaceLeft,
-              top: 126,
-              width: 525,
-              height: 1098,
+              top: 0,
+              width: 540,
+              height: 1350,
               display: "flex",
               flexDirection: "column",
               justifyContent: "space-between",
               overflow: "hidden",
-              padding: "68px 58px 48px",
+              padding: "104px 64px 64px",
               background: palette.background
             },
             children: [
