@@ -7,8 +7,8 @@ import { PDFDocument } from "pdf-lib";
 import sharp from "sharp";
 import { SlipError } from "./errors.js";
 import { resolveWithinWorkspace } from "./path.js";
-import { renderSlideSvg } from "./renderer.js";
-import { assertWorkspace, readCarousel } from "./workspace.js";
+import { planHeadlineSizes, renderSlideSvg } from "./renderer.js";
+import { assertWorkspace, readCarousel, workspaceBrand } from "./workspace.js";
 
 export interface InstagramSlide {
   filename: string;
@@ -65,6 +65,8 @@ export async function renderInstagramSlides(
     "carousel.yaml"
   );
   const carousel = await readCarousel(carouselFile, workspace);
+  const brand = await workspaceBrand(workspace);
+  const headlineSizes = planHeadlineSizes(carousel.slides);
   return Promise.all(
     carousel.slides.map(async (slide, index) => ({
       filename: instagramFilename(index, slide.id),
@@ -73,7 +75,9 @@ export async function renderInstagramSlides(
           carouselFile,
           workspace,
           slideIndex: index,
-          slideCount: carousel.slides.length
+          slideCount: carousel.slides.length,
+          brand,
+          headlineSize: headlineSizes[slide.id]
         })
       )
     }))

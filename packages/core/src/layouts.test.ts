@@ -83,6 +83,7 @@ describe("layout contracts", () => {
     expect(schema).toContain('"const":"type_only"');
     expect(schema).toContain('"const":"photo_split"');
     expect(schema).toContain('"const":"photo_band"');
+    expect(schema).toContain('"const":"photo_full"');
     expect(schema).toContain('"enum":["left","right"]');
     expect(schema).toContain('"enum":["left","center"]');
     expect(schema).toContain('"enum":["paper","ink"]');

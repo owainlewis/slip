@@ -9,9 +9,11 @@ import {
   carouselFiles,
   createInstagramZip,
   createLinkedInPdf,
+  planHeadlineSizes,
   readCarousel,
   renderSlideSvg,
-  SlipError
+  SlipError,
+  workspaceBrand
 } from "@slip/core";
 import chokidar, { type FSWatcher } from "chokidar";
 import { Hono } from "hono";
@@ -57,6 +59,8 @@ function errorPayload(error: unknown, workspace: string): { file: string; path: 
 async function renderCarousel(file: string, workspace: string): Promise<CarouselPreview> {
   const carousel = await readCarousel(file, workspace);
   const fileStat = await stat(file);
+  const brand = await workspaceBrand(workspace);
+  const headlineSizes = planHeadlineSizes(carousel.slides);
   const slides = await Promise.all(
     carousel.slides.map(async (slide, slideIndex) => ({
       id: slide.id,
@@ -65,7 +69,9 @@ async function renderCarousel(file: string, workspace: string): Promise<Carousel
         carouselFile: file,
         workspace,
         slideIndex,
-        slideCount: carousel.slides.length
+        slideCount: carousel.slides.length,
+        brand,
+        headlineSize: headlineSizes[slide.id]
       })
     }))
   );
@@ -138,6 +144,17 @@ export async function startSlipServer(options: StartServerOptions): Promise<Slip
     if (!entry?.carousel) return context.json({ error: "carousel not found" }, 404);
     return context.json({ carousel: entry.carousel, error: entry.error });
   });
+  app.get("/api/carousels/:slug/cover.svg", (context) => {
+    const slug = context.req.param("slug");
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
+      return context.json({ error: "invalid carousel slug" }, 400);
+    }
+    const cover = cache.get(slug)?.carousel?.slides[0];
+    if (!cover) return context.json({ error: "carousel not found" }, 404);
+    return new Response(cover.svg, {
+      headers: { "content-type": "image/svg+xml; charset=utf-8", "cache-control": "no-cache" }
+    });
+  });
   app.get("/api/carousels/:slug/instagram.zip", async (context) => {
     const slug = context.req.param("slug");
     if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
@@ -183,7 +200,7 @@ export async function startSlipServer(options: StartServerOptions): Promise<Slip
   const webRequire = createRequire(join(webRoot, "package.json"));
   const fontRoots = [
     dirname(webRequire.resolve("@fontsource/inter/package.json")),
-    dirname(webRequire.resolve("@fontsource/source-serif-4/package.json"))
+    dirname(webRequire.resolve("@fontsource/newsreader/package.json"))
   ];
   let vite: ViteDevServer | undefined;
   let watcher: FSWatcher | undefined;

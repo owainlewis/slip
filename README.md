@@ -83,6 +83,34 @@ restrained mark using `options.emphasisStyle`. Every layout accepts a `paper`
 or `ink` tone. These additions are optional, so existing schema version 1
 files remain valid.
 
+Headlines are set in Newsreader and sized automatically. Your authored line
+breaks are the rag: Slip picks the largest size at which every line you wrote
+still fits on one line, so a headline fills its frame without ever re-wrapping
+into orphans. Write shorter lines to get bigger type.
+
+## Brand marks
+
+Set a wordmark and a signature once in `slip.yaml` and every slide in every
+carousel carries them, as in a magazine masthead:
+
+```yaml
+schemaVersion: 1
+defaultTheme: editorial
+brand:
+  wordmark: |-
+    Field
+    NOTES
+  signature: Owain Lewis
+```
+
+A two-line wordmark sets the first line in the display italic above
+letterspaced capitals; a single line renders as the capitals alone. Both
+fields are optional. The signature takes the bottom centre of the slide, and
+replaces the `01 / 05` folio there so the two never compete. Wordmarks are
+drawn on the `type_only` and `photo_full` layouts; `photo_split` and
+`photo_band` carry the signature only, because there is no scrim behind their
+top edge to keep a mark legible over an arbitrary photograph.
+
 Discover all available layouts or inspect one layout’s fields, choices, and
 copy limits:
 
@@ -91,6 +119,10 @@ copy limits:
 "$SLIP_BIN" layouts photo_split
 "$SLIP_BIN" validate software-is-disposable
 ```
+
+The four layouts are `type_only`, `photo_full` (a full-bleed photograph under
+a scrim with the headline over the lower half), `photo_split`, and
+`photo_band`.
 
 The checked-in `examples/editorial` workspace contains three coherent
 carousels covering every layout, tone, emphasis treatment, alignment, image

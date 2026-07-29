@@ -1,0 +1,164 @@
+schemaVersion: 1
+id: software-factory
+title: How to build your AI software factory
+# The headlines alone have to tell the whole story in order. Read them top to
+# bottom and you get: label an issue -> get a PR -> here are the same steps you
+# do by hand -> a program does them -> label -> agent writes the spec -> you
+# approve -> agent writes the code -> you review the PR -> use it for boring
+# work -> here is the repo. No slide assumes anything a previous slide has not
+# already said.
+slides:
+  # HOOK
+  - id: cover
+    layout: photo_full
+    content:
+      headline: |-
+        I added a label to
+        a GitHub issue and
+        got back a finished
+        pull request
+      emphasis: a label
+      body: Here is the whole setup, step by step.
+    image:
+      src: ../../assets/person-at-laptop.png
+      position: [0.58, 0.5]
+      zoom: 1
+    options:
+      emphasisStyle: italic
+  # PROBLEM. Also teaches the steps, so the next slide has something to refer to.
+  - id: problem
+    layout: type_only
+    content:
+      headline: |-
+        Every ticket takes
+        the same seven
+        steps by hand
+      emphasis: seven
+      body: Read it. Plan it. Write the code. Test it. Review it. Open a pull request. Fix whatever CI complains about. Every single time.
+    options:
+      align: left
+      tone: ink
+      emphasisStyle: italic
+  # WHAT IT IS. Plain definition, no metaphor to decode.
+  - id: what
+    layout: type_only
+    content:
+      headline: |-
+        A software factory
+        does those steps
+        for you
+      emphasis: for you
+      body: It's a program that watches your issue list. When a ticket is ready, it starts an agent that works through those seven steps and opens the pull request.
+    options:
+      align: left
+      tone: paper
+      emphasisStyle: italic
+  # HOW IT WORKS, in the order it actually happens.
+  - id: label
+    layout: type_only
+    content:
+      eyebrow: "01"
+      headline: |-
+        You put a label
+        on the ticket
+      emphasis: a label
+      body: That's the trigger. Nothing runs until you add one, so you decide what the agents pick up and when.
+    options:
+      align: left
+      tone: ink
+      emphasisStyle: italic
+  - id: spec
+    layout: type_only
+    content:
+      eyebrow: "02"
+      headline: |-
+        An agent rewrites
+        the ticket first
+      emphasis: rewrites
+      body: Most tickets are too vague to build from. Improve the readme, with no detail. So an agent reads your code, works out what's actually needed, and writes real acceptance criteria.
+    options:
+      align: left
+      tone: paper
+      emphasisStyle: italic
+  - id: approve
+    layout: type_only
+    content:
+      eyebrow: "03"
+      headline: |-
+        You read it and
+        label it again
+      emphasis: label it again
+      body: This is the only decision you make in the whole loop. It takes about ten seconds.
+    options:
+      align: left
+      tone: ink
+      emphasisStyle: italic
+  - id: build
+    layout: type_only
+    content:
+      eyebrow: "04"
+      headline: |-
+        A second agent
+        writes the code
+      emphasis: writes the code
+      body: It works in its own copy of the repo, so nothing collides. It plans, writes, runs the tests, reviews its own diff, opens the pull request, then fixes whatever CI flags.
+    options:
+      align: left
+      tone: paper
+      emphasisStyle: italic
+  - id: review
+    layout: type_only
+    content:
+      eyebrow: "05"
+      headline: |-
+        You come back to
+        a pull request
+      emphasis: a pull request
+      body: Usually about half an hour later. You read the diff and merge it, or send it back with a comment. That's the whole loop.
+    options:
+      align: left
+      tone: ink
+      emphasisStyle: italic
+  # SCOPE. Answers the obvious objection.
+  - id: scope
+    layout: type_only
+    content:
+      headline: |-
+        Only send it
+        the boring tickets
+      emphasis: the boring tickets
+      body: Dependency bumps, small bug fixes, cleanup. Anything that needs a real decision you still do yourself. This is for the work you'd rather not think about.
+    options:
+      align: left
+      tone: paper
+      emphasisStyle: italic
+  # BENEFIT
+  - id: benefit
+    layout: photo_full
+    content:
+      headline: |-
+        I label tickets in
+        the morning and
+        read pull requests
+        later
+      emphasis: read pull requests
+      body: That's the whole change to how I work.
+    image:
+      src: ../../assets/at-desk.png
+      position: [0.5, 0.5]
+      zoom: 1
+    options:
+      emphasisStyle: italic
+  # CTA
+  - id: cta
+    layout: type_only
+    content:
+      headline: |-
+        All of it is
+        open source
+      emphasis: open source
+      body: The workflows, the prompts, and the program that watches the queue. Comment FACTORY and I'll send you the repo.
+    options:
+      align: left
+      tone: paper
+      emphasisStyle: italic

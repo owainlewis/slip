@@ -19,11 +19,13 @@ export interface ImageCrop {
 }
 
 export const imageRegions = {
+  photo_full: { width: 1080, height: 1350 },
   photo_split: { width: 702, height: 1350 },
   photo_band: { width: 1080, height: 820 }
 } as const satisfies Record<PhotoSlide["layout"], ImageRegion>;
 
 const imageValidationRegions = {
+  photo_full: imageRegions.photo_full,
   photo_split: { width: 540, height: 1350 },
   photo_band: imageRegions.photo_band
 } as const satisfies Record<PhotoSlide["layout"], ImageRegion>;

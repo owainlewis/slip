@@ -23,14 +23,36 @@ export const carouselSchema = z
     });
   });
 
+export const brandSchema = z
+  .object({
+    wordmark: z
+      .string()
+      .min(1)
+      .max(40)
+      .refine((value) => value.split("\n").length <= 2, {
+        message: "wordmark must be one or two lines"
+      })
+      .optional(),
+    signature: z
+      .string()
+      .min(1)
+      .max(60)
+      .refine((value) => !value.includes("\n"), { message: "signature must be a single line" })
+      .optional()
+  })
+  .strict();
+
 export const workspaceConfigSchema = z
   .object({
     schemaVersion: z.literal(1),
-    defaultTheme: z.literal("editorial")
+    defaultTheme: z.literal("editorial"),
+    brand: brandSchema.optional()
   })
   .strict();
 
 export type Carousel = z.infer<typeof carouselSchema>;
+export type Brand = z.infer<typeof brandSchema>;
+export type WorkspaceConfig = z.infer<typeof workspaceConfigSchema>;
 
 export function carouselJsonSchema(): Record<string, unknown> {
   return z.toJSONSchema(carouselSchema, {

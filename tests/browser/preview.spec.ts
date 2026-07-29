@@ -49,7 +49,7 @@ test("lists and previews every polished example at 4:5", async ({ page }) => {
     await document.fonts.ready;
     return {
       inter: document.fonts.check('400 16px "Inter"'),
-      serif: document.fonts.check('700 16px "Source Serif 4"')
+      serif: document.fonts.check('600 16px "Newsreader"')
     };
   });
   expect(fontsLoaded).toEqual({ inter: true, serif: true });
@@ -92,9 +92,9 @@ test("keeps editorial previews readable at desktop and narrow viewports", async 
       "data-emphasis-style",
       "italic"
     );
-    await expect(page.getByTestId("slide").nth(1).locator("svg")).toHaveAttribute(
+    await expect(page.getByTestId("slide").nth(3).locator("svg")).toHaveAttribute(
       "data-emphasis-style",
-      "mark"
+      "italic"
     );
     const viewportFit = await page.evaluate(() => ({
       bodyWidth: document.body.scrollWidth,
@@ -131,23 +131,32 @@ test("referenced image changes refresh the photographic preview", async ({ page 
   }
 });
 
+const coverHeadline = [
+  "You don't have a",
+  "productivity problem.",
+  "You have a taste",
+  "problem, and it is",
+  "getting expensive"
+].join(" ");
+
 test("valid changes refresh and invalid content preserves the last valid preview", async ({ page }) => {
   await page.goto("/?carousel=essential");
-  await expect(page.getByLabel("Slide 1: Code is cheap. Context is not.")).toBeVisible();
+  await expect(page.getByLabel(`Slide 1: ${coverHeadline}`)).toBeVisible();
   const original = await readFile(carouselFile, "utf8");
   const valid = original
-    .replace("Code is cheap.", "A valid live update.")
-    .replace("      emphasis: Context\n", "");
+    .replace("getting expensive", "getting cheaper")
+    .replace("      emphasis: taste\n", "");
+  const updatedHeadline = coverHeadline.replace("getting expensive", "getting cheaper");
   await writeFile(carouselFile, valid);
-  await expect(page.getByLabel("Slide 1: A valid live update. Context is not.")).toBeVisible();
+  await expect(page.getByLabel(`Slide 1: ${updatedHeadline}`)).toBeVisible();
 
-  await writeFile(carouselFile, valid.replace("align: left", "align: diagonal"));
+  await writeFile(carouselFile, valid.replace("align: center", "align: diagonal"));
   const alert = page.getByRole("alert");
   await expect(alert).toContainText("carousels/essential/carousel.yaml:$.slides[0].options.align");
   await expect(alert).toContainText('received: "diagonal"');
   await expect(alert).toContainText("allowed: left, center");
   await expect(alert).toContainText("last valid preview");
-  await expect(page.getByLabel("Slide 1: A valid live update. Context is not.")).toBeVisible();
+  await expect(page.getByLabel(`Slide 1: ${updatedHeadline}`)).toBeVisible();
 
   await writeFile(carouselFile, original);
   await expect(page.getByRole("alert")).toHaveCount(0);

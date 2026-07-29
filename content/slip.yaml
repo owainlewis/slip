@@ -1,7 +1,5 @@
 schemaVersion: 1
 defaultTheme: editorial
 brand:
-  wordmark: |-
-    Field
-    NOTES
+  wordmark: AI Engineer
   signature: Owain Lewis

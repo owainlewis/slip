@@ -5,69 +5,69 @@ slides:
   - id: cover
     layout: type_only
     content:
-      eyebrow: FIELD NOTE 01
       headline: |-
-        Code is cheap.
-        Context is not.
-      emphasis: Context
-      body: Execution keeps getting easier. The difficult part has moved somewhere less visible.
+        You don't have a
+        productivity problem.
+        You have a taste
+        problem, and it is
+        getting expensive
+      emphasis: taste
     options:
-      align: left
+      align: center
       tone: ink
       emphasisStyle: italic
   - id: upstream
-    layout: photo_band
+    layout: photo_full
     content:
       headline: |-
         The bottleneck
-        moved upstream.
+        moved upstream
       emphasis: upstream
-      caption: When output is abundant, deciding what deserves to exist becomes the work.
+      body: When output is abundant, deciding what deserves to exist becomes the work.
     image:
       src: ../../assets/sierra-nevada.jpg
       position: [0.48, 0.44]
       zoom: 1.15
     options:
-      tone: paper
-      emphasisStyle: mark
+      emphasisStyle: italic
   - id: survives
     layout: type_only
     content:
-      eyebrow: THE SCARCE LAYER
       headline: |-
-        What
-        survives?
-      emphasis: survives
-      body: Taste. Distribution. Trust. The judgment to know which problem is worth solving.
+        Writing the code was
+        never the expensive
+        part. Deciding what
+        was worth writing
+        always was
+      emphasis: worth writing
     options:
-      align: left
+      align: center
       tone: paper
       emphasisStyle: italic
   - id: wider-field
-    layout: photo_split
+    layout: photo_full
+    content:
+      headline: |-
+        Better tools widen
+        the field. They don't
+        hand you a point of view
+      emphasis: widen
     image:
       src: ../../assets/person-at-laptop.png
       position: [0.58, 0.5]
       zoom: 1
-    content:
-      headline: |-
-        Better tools
-        widen the field.
-      emphasis: widen
-      body: They do not remove the need for a point of view. They make its absence easier to see.
     options:
-      side: right
-      tone: ink
       emphasisStyle: italic
   - id: close
     layout: type_only
     content:
       headline: |-
-        Build the part
-        no model can own.
-      emphasis: own
-      body: Let the machine accelerate the craft. Keep the reason for making it human.
+        Let the machine take
+        the craft. Keep the
+        reason for making it
+      emphasis: reason
+      body: Build the part no model can own.
     options:
       align: center
       tone: paper
-      emphasisStyle: mark
+      emphasisStyle: italic

@@ -24,6 +24,7 @@ describe("CLI contracts", () => {
     expect(list.stdout).toContain("type_only");
     expect(list.stdout).toContain("photo_split");
     expect(list.stdout).toContain("photo_band");
+    expect(list.stdout).toContain("photo_full");
 
     const detail = await run(["layouts", "photo_split"], process.cwd());
     expect(detail.exitCode).toBe(0);
@@ -38,7 +39,7 @@ describe("CLI contracts", () => {
     const unknown = await run(["layouts", "hero"], process.cwd());
     expect(unknown.exitCode).toBe(1);
     expect(unknown.stderr).toContain('unknown layout "hero"');
-    expect(unknown.stderr).toContain("type_only, photo_split, photo_band");
+    expect(unknown.stderr).toContain("type_only, photo_full, photo_split, photo_band");
   }, 15_000);
 
   it("supports init, new, and validate with actionable locations", async () => {

@@ -1,7 +1,14 @@
 import { link, mkdir, open, readFile, readdir, rename, stat, unlink, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { parseDocument, stringify } from "yaml";
-import { carouselJsonSchema, carouselSchema, type Carousel, workspaceConfigSchema } from "./schema.js";
+import {
+  carouselJsonSchema,
+  carouselSchema,
+  type Brand,
+  type Carousel,
+  workspaceConfigSchema,
+  type WorkspaceConfig
+} from "./schema.js";
 import { formatIssue, formatYamlPath, SlipError } from "./errors.js";
 import { validateCarouselImages } from "./image.js";
 import { resolveWithinWorkspace } from "./path.js";
@@ -70,9 +77,8 @@ export async function initialiseWorkspace(directory: string): Promise<string> {
   return root;
 }
 
-export async function assertWorkspace(rootPath: string): Promise<string> {
-  const root = resolve(rootPath);
-  const file = join(root, "slip.yaml");
+export async function readWorkspaceConfig(rootPath: string): Promise<WorkspaceConfig> {
+  const file = join(resolve(rootPath), "slip.yaml");
   let raw: string;
   try {
     raw = await readFile(file, "utf8");
@@ -87,7 +93,16 @@ export async function assertWorkspace(rootPath: string): Promise<string> {
     const issue = result.error.issues[0]!;
     throw new SlipError(formatIssue(issue, input), file, formatYamlPath(issue.path));
   }
-  return root;
+  return result.data;
+}
+
+export async function assertWorkspace(rootPath: string): Promise<string> {
+  await readWorkspaceConfig(rootPath);
+  return resolve(rootPath);
+}
+
+export async function workspaceBrand(rootPath: string): Promise<Brand | undefined> {
+  return (await readWorkspaceConfig(rootPath)).brand;
 }
 
 export async function createCarousel(rootPath: string, slug: string, title?: string): Promise<string> {

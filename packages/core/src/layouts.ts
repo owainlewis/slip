@@ -61,6 +61,28 @@ export const typeOnlySlideSchema = z
   })
   .strict();
 
+export const photoFullSlideSchema = z
+  .object({
+    id: slideIdSchema,
+    layout: z.literal("photo_full"),
+    content: z
+      .object({
+        headline: z.string().min(1).max(100),
+        emphasis: emphasisSchema,
+        body: z.string().min(1).max(180).optional()
+      })
+      .strict()
+      .superRefine(requireHeadlineEmphasis),
+    image: imageSchema,
+    options: z
+      .object({
+        emphasisStyle: emphasisStyleSchema
+      })
+      .strict()
+      .default({ emphasisStyle: "italic" })
+  })
+  .strict();
+
 export const photoSplitSlideSchema = z
   .object({
     id: slideIdSchema,
@@ -138,6 +160,35 @@ export const layoutDefinitions = [
     emphasisStyle: italic`
   },
   {
+    id: "photo_full",
+    summary: "A full-bleed photograph under a scrim, with the headline set over the lower half.",
+    schema: photoFullSlideSchema,
+    fields: [
+      "content.headline  required, 1–100 characters",
+      "content.emphasis optional exact phrase from headline, 1–48 characters",
+      "content.body      optional, 1–180 characters",
+      "image.src         required, path relative to carousel.yaml",
+      "image.position    [x, y], each 0–1 inclusive (default: [0.5, 0.5])",
+      "image.zoom        1–3 (default: 1)",
+      "options.emphasisStyle italic | mark (default: italic)"
+    ],
+    example: `- id: cover
+  layout: photo_full
+  content:
+    headline: |-
+      Not knowing my own
+      position before investing
+      has cost me a year
+    emphasis: before
+    body: Sharing this so you do not make the same expensive mistake.
+  image:
+    src: ../../assets/portrait.jpg
+    position: [0.5, 0.4]
+    zoom: 1.1
+  options:
+    emphasisStyle: italic`
+  },
+  {
     id: "photo_split",
     summary: "A full-height photograph and overlapping opaque editorial surface.",
     schema: photoSplitSlideSchema,
@@ -200,14 +251,16 @@ export const layoutDefinitions = [
 export const slideSchema = z.discriminatedUnion("layout", [
   layoutDefinitions[0].schema,
   layoutDefinitions[1].schema,
-  layoutDefinitions[2].schema
+  layoutDefinitions[2].schema,
+  layoutDefinitions[3].schema
 ]);
 
 export type Slide = z.infer<typeof slideSchema>;
 export type TypeOnlySlide = z.infer<typeof typeOnlySlideSchema>;
+export type PhotoFullSlide = z.infer<typeof photoFullSlideSchema>;
 export type PhotoSplitSlide = z.infer<typeof photoSplitSlideSchema>;
 export type PhotoBandSlide = z.infer<typeof photoBandSlideSchema>;
-export type PhotoSlide = PhotoSplitSlide | PhotoBandSlide;
+export type PhotoSlide = PhotoFullSlide | PhotoSplitSlide | PhotoBandSlide;
 export type LayoutId = Slide["layout"];
 
 export function listLayouts(): string {
